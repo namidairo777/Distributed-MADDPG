@@ -164,7 +164,7 @@ def train(sess,env,args,actors,critics,noise, ave_n):
 			action_dims_done = action_dims_done + actor.action_dim
 			episode_reward += r
 			#print(done)
-			if np.all(done) :
+			if stp == int(args["max_episode_len"])-1 or np.all(done) :
 				ave_reward = 0.0
 				good_reward = 0.0
 				for i in range(env.n):
@@ -183,8 +183,8 @@ def train(sess,env,args,actors,critics,noise, ave_n):
 				showReward(episode_reward, env.n, ep)
 				break
 
-			if stp == int(args['max_episode_len'])-1:
-				showReward(episode_reward, env.n, ep)
+			 if stp == int(args['max_episode_len'])-1:
+				 showReward(episode_reward, env.n, ep)
 
 				# save model
 	print("Starting saving model")

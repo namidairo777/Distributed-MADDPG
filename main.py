@@ -88,6 +88,8 @@ def run():
     # test for 100 episode
     for ep in range(50):
         s = env.reset()
+        #if ep == 0:
+            #print([i.state.p_pos for i in env.world.borders])
         reward = 0.0
         for step in range(1000):
             env.render()
@@ -124,8 +126,8 @@ if __name__ == '__main__':
     parser.add_argument('--use-gym-monitor', help='record gym results', action='store_true')
     parser.add_argument('--monitor-dir', help='directory for storing gym results', default='./results/gym_ddpg_4')
     parser.add_argument('--summary-dir', help='directory for storing tensorboard info', default='./results/maddpg_vs_ddpg_2')
-    parser.add_argument('--modelFolder', help='the folder which saved model data', default="maddpg_model/actor2_")
-    parser.add_argument('--runTest', help='use saved model to run', default=False)
+    parser.add_argument('--modelFolder', help='the folder which saved model data', default="maddpg_model/actor1_")
+    parser.add_argument('--runTest', help='use saved model to run', default=True)
 
     parser.set_defaults(render_env=False)
     parser.set_defaults(use_gym_monitor=True)

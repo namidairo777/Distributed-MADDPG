@@ -27,4 +27,3 @@ class ReplayMemory(object):
 
 	def clear(self):
 		self.buffer.clear()
-

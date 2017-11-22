@@ -183,8 +183,8 @@ def train(sess,env,args,actors,critics,noise, ave_n):
 				showReward(episode_reward, env.n, ep)
 				break
 
-			 if stp == int(args['max_episode_len'])-1:
-				 showReward(episode_reward, env.n, ep)
+			#if stp == int(args['max_episode_len'])-1:
+				#showReward(episode_reward, env.n, ep)
 
 				# save model
 	print("Starting saving model")

@@ -91,7 +91,7 @@ def run():
         #if ep == 0:
             #print([i.state.p_pos for i in env.world.borders])
         reward = 0.0
-        for step in range(1000):
+        for step in range(200):
             env.render()
             actions = []
             for i in range(env.n):
@@ -120,14 +120,14 @@ if __name__ == '__main__':
     # run parameters
     #parser.add_argument('--env', help='choose the gym env- tested on {Pendulum-v0}', default='MountainCarContinuous-v0')
     parser.add_argument('--random-seed', help='random seed for repeatability', default=1234)
-    parser.add_argument('--max-episodes', help='max num of episodes to do while training', default=5000)
+    parser.add_argument('--max-episodes', help='max num of episodes to do while training', default=1000)
     parser.add_argument('--max-episode-len', help='max length of 1 episode', default=100)
     parser.add_argument('--render-env', help='render the gym env', action='store_true')
     parser.add_argument('--use-gym-monitor', help='record gym results', action='store_true')
     parser.add_argument('--monitor-dir', help='directory for storing gym results', default='./results/gym_ddpg_4')
     parser.add_argument('--summary-dir', help='directory for storing tensorboard info', default='./results/maddpg2_vs_ddpg_1/tf_data')
     parser.add_argument('--modelFolder', help='the folder which saved model data', default="./results/maddpg2_vs_ddpg_1/keras_model/actor")
-    parser.add_argument('--runTest', help='use saved model to run', default=False)
+    parser.add_argument('--runTest', help='use saved model to run', default=True)
 
     parser.set_defaults(render_env=False)
     parser.set_defaults(use_gym_monitor=True)

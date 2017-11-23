@@ -46,9 +46,10 @@ class Scenario(BaseScenario):
             border.name = 'border %d' % i
             border.collide = True
             border.movable = False
-            border.size = 0.1
+            border.size = 0.15
             border.boundary = False
-            border.shape = [[-0.05, -0.05], [0.05, -0.05], [0.05, 0.05], [-0.05, 0.05]]
+            # border.shape = [[-0.05, -0.05], [0.05, -0.05], [0.05, 0.05], [-0.05, 0.05]]
+            border.shape = [[-0.1, -0.1], [0.1, -0.1], [0.1, 0.1], [-0.1, 0.1]]
 
             #print(border.pos)
         # make initial conditions

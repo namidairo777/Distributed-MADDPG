@@ -86,17 +86,19 @@ def run():
         exploration_noise.append(OUNoise(mu = np.zeros(env.action_space[i].n)))
 
     # test for 100 episode
+    import time
     for ep in range(50):
         s = env.reset()
         #if ep == 0:
             #print([i.state.p_pos for i in env.world.borders])
         reward = 0.0
-        for step in range(200):
+        for step in range(100):
+            # time.sleep(0.05)
             env.render()
             actions = []
             for i in range(env.n):
                 state_input = np.reshape(s[i],(-1,env.observation_space[i].shape[0]))
-                predict_action = actors[i].predict(state_input) + exploration_noise[i]()
+                predict_action = actors[i].predict(state_input) #+ exploration_noise[i]()
                 actions.append(predict_action.reshape(env.action_space[i].n,))
             s, r, d, s2 = env.step(actions)
             for i in range(env.n - 1):
@@ -112,7 +114,7 @@ if __name__ == '__main__':
     # agent parameters
     parser.add_argument('--actor-lr', help='actor network learning rate', default=0.01)
     parser.add_argument('--critic-lr', help='critic network learning rate', default=0.01)
-    parser.add_argument('--gamma', help='discount factor for critic updates', default=0.99)
+    parser.add_argument('--gamma', help='discount factor for critic updates', default=0.95)
     parser.add_argument('--tau', help='soft target update parameter', default=0.01)
     parser.add_argument('--buffer-size', help='max size of the replay buffer', default=1000000)
     parser.add_argument('--minibatch-size', help='size of minibatch for minibatch-SGD', default=64)
@@ -121,12 +123,12 @@ if __name__ == '__main__':
     #parser.add_argument('--env', help='choose the gym env- tested on {Pendulum-v0}', default='MountainCarContinuous-v0')
     parser.add_argument('--random-seed', help='random seed for repeatability', default=1234)
     parser.add_argument('--max-episodes', help='max num of episodes to do while training', default=1000)
-    parser.add_argument('--max-episode-len', help='max length of 1 episode', default=100)
+    parser.add_argument('--max-episode-len', help='max length of 1 episode', default=500)
     parser.add_argument('--render-env', help='render the gym env', action='store_true')
     parser.add_argument('--use-gym-monitor', help='record gym results', action='store_true')
     parser.add_argument('--monitor-dir', help='directory for storing gym results', default='./results/gym_ddpg_4')
-    parser.add_argument('--summary-dir', help='directory for storing tensorboard info', default='./results/maddpg2_vs_ddpg_1/tf_data')
-    parser.add_argument('--modelFolder', help='the folder which saved model data', default="./results/maddpg2_vs_ddpg_1/keras_model/actor")
+    parser.add_argument('--summary-dir', help='directory for storing tensorboard info', default='./results/maddpg2_vs_ddpg_1/tf_data_reward2')
+    parser.add_argument('--modelFolder', help='the folder which saved model data', default="./results/maddpg2_vs_ddpg_1/keras_model/actor_R2_")
     parser.add_argument('--runTest', help='use saved model to run', default=True)
 
     parser.set_defaults(render_env=False)

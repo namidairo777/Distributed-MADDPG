@@ -12,9 +12,16 @@ class Brain(object):
 		pass
 
 	def update(self):
+		global GLOBAL_UPDATE_COUNTER
+
 		while not COORD.should_stop():
 			if GLOBAL_EP < EP_MAX:
 				# print("I am brain")
+				UPDATE_EVENT.wait()
+				print("update global brain")
+				UPDATE_EVENT.clear()
+				GLOBAL_UPDATE_COUNTER = 0
+				ROLLING_EVENT.set()
 				pass
 
 class Worker(object):
@@ -24,7 +31,7 @@ class Worker(object):
 
 	def work(self):
 		print("worker{:d} started".format(self.wid))
-		global GLOBAL_EP
+		global GLOBAL_EP, GLOBAL_UPDATE_COUNTER
 
 		while not COORD.should_stop():
 			s = self.env.reset()
@@ -36,8 +43,13 @@ class Worker(object):
 				s2, _, done, _ = self.env.step(self.env.action_space.sample())
 				s = s2
 
-				if stp == EP_LEN - 1:
+				GLOBAL_UPDATE_COUNTER += 1
+				if stp == EP_LEN - 1 or GLOBAL_UPDATE_COUNTER >= 64:
 					
+					if GLOBAL_UPDATE_COUNTER >= 64: # minbatch size
+						ROLLING_EVENT.clear()
+						UPDATE_EVENT.set()
+
 					if GLOBAL_EP >= EP_MAX:
 						COORD.request_stop()
 						break
@@ -45,6 +57,12 @@ class Worker(object):
 
 
 if __name__ == "__main__":
+
+	UPDATE_EVENT, ROLLING_EVENT = threading.Event(), threading.Event()
+	UPDATE_EVENT.clear()
+	ROLLING_EVENT.set()
+
+	GLOBAL_UPDATE_COUNTER, GLOBAL_EP = 0, 0
 
 	GLOBAL_EP = 0
 

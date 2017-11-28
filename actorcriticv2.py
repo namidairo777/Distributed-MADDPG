@@ -21,8 +21,8 @@ class ActorNetwork(object):
 		self.action_dim = action_dim
 		self.lr =  lr
 		self.tau = tau
-		self.mainModel,self.mainModel_weights,self.mainModel_state = self._build_model()
-		self.targetModel,self.targetModel_weights,_ = self._build_model()
+		self.mainModel,self.mainModel_weights,self.mainModel_state = self._build_simple_model()
+		self.targetModel,self.targetModel_weights,_ = self._build_simple_model()
 		self.action_gradient = tf.placeholder(tf.float32,[None,self.action_dim])
 		self.params_grad = tf.gradients(self.mainModel.output, self.mainModel_weights, self.action_gradient)
 		grads = zip(self.params_grad,self.mainModel_weights)
@@ -44,6 +44,20 @@ class ActorNetwork(object):
 		model = Model(inputs=input_obs,outputs=pred)
 		model.compile(optimizer='Adam',loss='categorical_crossentropy')
 		return model,model.trainable_weights,input_obs
+
+	# Simple network
+	def _build_simple_model(self):
+		input_obs = Input(shape=(self.state_dim,))
+		h = Dense(32)(input_obs)
+		h = Activation('relu')(h)
+		h = BatchNormalization()(h)
+		h = Dense(self.action_dim)(h)
+		pred = Activation('softmax')(h)
+		#pred = tf.contrib.distributions.RelaxedOneHotCategorical(0.1,probs=h).sample()
+		model = Model(inputs=input_obs,outputs=pred)
+		model.compile(optimizer='Adam',loss='categorical_crossentropy')
+		return model,model.trainable_weights,input_obs
+
 
 	# Choose an action
 	def act(self,state,noise):
@@ -83,8 +97,8 @@ class CriticNetwork(object):
 		self.tau = tau
 		self.num_agents = num_agents
 		self.gamma  =  gamma
-		self.mainModel,self.state,self.actions = self._build_model()
-		self.targetModel,_,_ = self._build_model()
+		self.mainModel,self.state,self.actions = self._build_simple_model()
+		self.targetModel,_,_ = self._build_simple_model()
 		self.action_grads  = tf.gradients(self.mainModel.output,self.actions)
 		self.sess.run(tf.global_variables_initializer())
 
@@ -103,6 +117,28 @@ class CriticNetwork(object):
 		action_abs = BatchNormalization()(action_abs)
 		h = Concatenate()([h,action_abs])
 		h = Dense(64)(h)
+		h = Activation('relu')(h)
+		h = BatchNormalization()(h)
+		pred = Dense(1,kernel_initializer='random_uniform')(h)
+		model = Model(inputs=[input_obs,input_actions],outputs=pred)
+		model.compile(optimizer='Adam',loss='mean_squared_error')
+		return model,input_obs,input_actions
+
+	# Simple Network model
+	def _build_simple_model(self):
+		with tf.name_scope("Critic_state_input"):
+			input_obs = Input(shape=(self.state_dim,))
+		with tf.name_scope("Critic_action_input"):
+			input_actions = Input(shape=(self.action_dim,))
+
+		h = Dense(32)(input_obs)
+		h = Activation('relu')(h)
+		h = BatchNormalization()(h)
+		action_abs = Dense(32)(input_actions)
+		action_abs = Activation('relu')(action_abs)
+		action_abs = BatchNormalization()(action_abs)
+		h = Concatenate()([h,action_abs])
+		h = Dense(32)(h)
 		h = Activation('relu')(h)
 		h = BatchNormalization()(h)
 		pred = Dense(1,kernel_initializer='random_uniform')(h)

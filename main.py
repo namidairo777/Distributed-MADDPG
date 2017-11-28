@@ -73,6 +73,12 @@ def main(args):
         #if args['use_gym_monitor']:
         #    envMonitor.monitor.close()
 
+def main_DMADDPG(args):
+
+    with tf.Session() as sess:
+
+        env = make_env.make_env("simple_tag")
+
 # Training stop
 def run():
     env  = make_env.make_env('simple_tag')
@@ -92,8 +98,8 @@ def run():
         #if ep == 0:
             #print([i.state.p_pos for i in env.world.borders])
         reward = 0.0
-        for step in range(100):
-            # time.sleep(0.05)
+        for step in range(150):
+            time.sleep(0.05)
             env.render()
             actions = []
             for i in range(env.n):
@@ -123,12 +129,12 @@ if __name__ == '__main__':
     #parser.add_argument('--env', help='choose the gym env- tested on {Pendulum-v0}', default='MountainCarContinuous-v0')
     parser.add_argument('--random-seed', help='random seed for repeatability', default=1234)
     parser.add_argument('--max-episodes', help='max num of episodes to do while training', default=1000)
-    parser.add_argument('--max-episode-len', help='max length of 1 episode', default=500)
+    parser.add_argument('--max-episode-len', help='max length of 1 episode', default=200)
     parser.add_argument('--render-env', help='render the gym env', action='store_true')
     parser.add_argument('--use-gym-monitor', help='record gym results', action='store_true')
     parser.add_argument('--monitor-dir', help='directory for storing gym results', default='./results/gym_ddpg_4')
-    parser.add_argument('--summary-dir', help='directory for storing tensorboard info', default='./results/maddpg2_vs_ddpg_1/tf_data_reward2')
-    parser.add_argument('--modelFolder', help='the folder which saved model data', default="./results/maddpg2_vs_ddpg_1/keras_model/actor_R2_")
+    parser.add_argument('--summary-dir', help='directory for storing tensorboard info', default='./results/maddpg2_vs_ddpg_1/tf_data')
+    parser.add_argument('--modelFolder', help='the folder which saved model data', default="./results/maddpg2_vs_ddpg_1/keras_model/actor_simple_")
     parser.add_argument('--runTest', help='use saved model to run', default=True)
 
     parser.set_defaults(render_env=False)

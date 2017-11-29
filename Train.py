@@ -59,14 +59,14 @@ def train(sess,env,args,actors,critics,noise, ave_n):
 			s = s2
 
 			# MADDPG Adversary Agent			
-			for i in range(ave_n):
+			for i in range(env.n):
 				actor = actors[i]
 				critic = critics[i]
 				if replayMemory.size()>int(args['minibatch_size']):
 
 					s_batch,a_batch,r_batch,d_batch,s2_batch = replayMemory.miniBatch(int(args['minibatch_size']))
 					a = []
-					for j in range(ave_n):
+					for j in range(env.n):
 						state_batch_j = np.asarray([x for x in s_batch[:,j]]) #batch processing will be much more efficient even though reshaping will have to be done
 						a.append(actors[j].predict_target(state_batch_j))
 					#print(np.asarray(a).shape)
@@ -106,6 +106,7 @@ def train(sess,env,args,actors,critics,noise, ave_n):
 			
 
 			# Only DDPG agent
+			"""
 			for i in range(ave_n, env.n):
 				actor = actors[i]
 				critic = critics[i]
@@ -159,7 +160,7 @@ def train(sess,env,args,actors,critics,noise, ave_n):
 					actor.update_target()
 
 					critic.update_target()
-
+			"""
 
 			action_dims_done = action_dims_done + actor.action_dim
 			episode_reward += r
@@ -187,11 +188,11 @@ def train(sess,env,args,actors,critics,noise, ave_n):
 				#showReward(episode_reward, env.n, ep)
 
 				# save model
-	print("Starting saving model")
-	for i in range(env.n):
-		saveModel(actors[i], i, args["modelFolder"])
-
-	print("Model saved")
+		if ep % 200 == 0 and ep != 0:
+			print("Starting saving model every 200 episodes")
+			for i in range(env.n):
+				saveModel(actors[i], i, args["modelFolder"])
+			print("Model saved")
 
 def saveModel(actor, i, pathToSave):
 	actor.mainModel.save(pathToSave + str(i) + ".h5")

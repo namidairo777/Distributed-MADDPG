@@ -42,7 +42,7 @@ def main(args):
         total_action_dim = 0
 
         # Aversary Agents action spaces
-        for i in range(ave_n):
+        for i in range(env.n):
             total_action_dim = total_action_dim + env.action_space[i].n
 
         # print("total_action_dim", total_action_dim)
@@ -53,12 +53,12 @@ def main(args):
             action_dim.append(env.action_space[i].n) # assuming discrete action space here -> otherwise change to something like env.action_space[i].shape[0]
             actors.append(ActorNetwork(sess,observation_dim[i],action_dim[i],float(args['actor_lr']),float(args['tau'])))
             
-            if i < ave_n:
+            # if i < ave_n:
                 # MADDPG - centralized Critic
-                critics.append(CriticNetwork(sess,n,observation_dim[i],total_action_dim,float(args['actor_lr']),float(args['tau']),float(args['gamma'])))
-            else:
+            critics.append(CriticNetwork(sess,n,observation_dim[i],total_action_dim,float(args['actor_lr']),float(args['tau']),float(args['gamma'])))
+            # else:
                 # DDPG
-                critics.append(CriticNetwork(sess,n,observation_dim[i],action_dim[i],float(args['actor_lr']),float(args['tau']),float(args['gamma'])))
+                # critics.append(CriticNetwork(sess,n,observation_dim[i],action_dim[i],float(args['actor_lr']),float(args['tau']),float(args['gamma'])))
             
             exploration_noise.append(OUNoise(mu = np.zeros(action_dim[i])))
 
@@ -134,8 +134,8 @@ if __name__ == '__main__':
     parser.add_argument('--use-gym-monitor', help='record gym results', action='store_true')
     parser.add_argument('--monitor-dir', help='directory for storing gym results', default='./results/gym_ddpg_4')
     parser.add_argument('--summary-dir', help='directory for storing tensorboard info', default='./results/maddpg2_vs_ddpg_1/tf_data')
-    parser.add_argument('--modelFolder', help='the folder which saved model data', default="./results/maddpg2_vs_ddpg_1/keras_model/actor_simple_")
-    parser.add_argument('--runTest', help='use saved model to run', default=True)
+    parser.add_argument('--modelFolder', help='the folder which saved model data', default="./results/maddpg2_vs_ddpg_1/keras_model/actor_maddpg_")
+    parser.add_argument('--runTest', help='use saved model to run', default=False)
 
     parser.set_defaults(render_env=False)
     parser.set_defaults(use_gym_monitor=True)

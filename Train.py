@@ -86,7 +86,8 @@ def train(sess,env,args,actors,critics,noise, ave_n):
 					s_batch_i = np.asarray([x for x in s_batch[:,i]])
 					
 					# critic.train()
-					critic.train(s_batch_i,np.asarray([x.flatten() for x in a_batch[:, 0: ave_n, :]]),np.asarray(yi))
+					critic.train(s_batch_i,np.asarray([x.flatten() for x in a_batch]),np.asarray(yi))
+					#critic.train(s_batch_i,np.asarray([x.flatten() for x in a_batch[:, 0: ave_n, :]]),np.asarray(yi))
 					#predictedQValue = critic.train(s_batch,np.asarray([x.flatten() for x in a_batch]),yi)
 					#episode_av_max_q += np.amax(predictedQValue)
 					

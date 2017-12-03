@@ -1,7 +1,7 @@
 import tensorflow as tf
 import numpy as  np
 from keras.models import Model
-from keras.layers import Dense,Input,BatchNormalization,Concatenate,Activation
+from keras.layers import Dense,Input,BatchNormalization,Concatenate,Add,Activation,Lambda
 from keras.optimizers import Adam
 import keras.backend as K
 
@@ -21,8 +21,8 @@ class ActorNetwork(object):
 		self.action_dim = action_dim
 		self.lr =  lr
 		self.tau = tau
-		self.mainModel,self.mainModel_weights,self.mainModel_state = self._build_simple_model()
-		self.targetModel,self.targetModel_weights,_ = self._build_simple_model()
+		self.mainModel,self.mainModel_weights,self.mainModel_state = self._build_hard_model()
+		self.targetModel,self.targetModel_weights,_ = self._build_hard_model()
 		self.action_gradient = tf.placeholder(tf.float32,[None,self.action_dim])
 		self.params_grad = tf.gradients(self.mainModel.output, self.mainModel_weights, self.action_gradient)
 		grads = zip(self.params_grad,self.mainModel_weights)
@@ -41,6 +41,24 @@ class ActorNetwork(object):
 		h = Dense(self.action_dim)(h)
 		pred = Activation('softmax')(h)
 		#pred = tf.contrib.distributions.RelaxedOneHotCategorical(0.1,probs=h).sample()
+		model = Model(inputs=input_obs,outputs=pred)
+		model.compile(optimizer='Adam',loss='categorical_crossentropy')
+		return model,model.trainable_weights,input_obs
+
+	def _build_hard_model(self):
+		input_obs = Input(shape=(self.state_dim,))
+		h = Dense(400)(input_obs)
+		h = Activation('relu')(h)
+		#h = BatchNormalization()(h)
+		h = Dense(300)(h)
+		h = Activation('relu')(h)
+		#h = BatchNormalization()(h)
+		h = Dense(self.action_dim)(h)
+		pred = Activation('softmax')(h)
+		
+		# pred = Lambda(lambda h: tf.contrib.distributions.RelaxedOneHotCategorical(0.1,probs=h).sample())(h)
+		# pred = model.add(Lambda(ontHot(h))(h))
+
 		model = Model(inputs=input_obs,outputs=pred)
 		model.compile(optimizer='Adam',loss='categorical_crossentropy')
 		return model,model.trainable_weights,input_obs
@@ -75,7 +93,9 @@ class ActorNetwork(object):
 	def update_target(self):
 		wMain =  np.asarray(self.mainModel.get_weights())
 		wTarget = np.asarray(self.targetModel.get_weights())
-		self.targetModel.set_weights(self.tau*wMain + (1.0-self.tau)*wTarget)
+		for i in range(len(wMain)):
+			wTarget[i] = self.tau*wMain[i] + (1-self.tau)*wTarget[i]
+		self.targetModel.set_weights(wTarget)
 
 	# AdamOptimizer.minimize(TD loss)
 	def train(self,state,action_grad):
@@ -92,13 +112,13 @@ class CriticNetwork(object):
 		K.set_learning_phase(1)
 		self.state_dim = state_dim
 		self.action_dim = action_dim
-		print(self.action_dim)
+		# print(self.action_dim)
 		self.lr =  lr
 		self.tau = tau
 		self.num_agents = num_agents
 		self.gamma  =  gamma
-		self.mainModel,self.state,self.actions = self._build_simple_model()
-		self.targetModel,_,_ = self._build_simple_model()
+		self.mainModel,self.state,self.actions = self._build_hard_model()
+		self.targetModel,_,_ = self._build_hard_model()
 		self.action_grads  = tf.gradients(self.mainModel.output,self.actions)
 		self.sess.run(tf.global_variables_initializer())
 
@@ -119,6 +139,25 @@ class CriticNetwork(object):
 		h = Dense(64)(h)
 		h = Activation('relu')(h)
 		h = BatchNormalization()(h)
+		pred = Dense(1,kernel_initializer='random_uniform')(h)
+		model = Model(inputs=[input_obs,input_actions],outputs=pred)
+		model.compile(optimizer='Adam',loss='mean_squared_error')
+		return model,input_obs,input_actions
+
+	def _build_hard_model(self):
+		input_obs = Input(shape=(self.state_dim,))
+		input_actions = Input(shape=(self.action_dim,))
+		h = Dense(400)(input_obs)
+		h = Activation('relu')(h)
+		#h = BatchNormalization()(h)
+		action_abs = Dense(300)(input_actions)
+		temp1 = Dense(300)(h)
+		#action_abs = Activation('relu')(action_abs)
+		#action_abs = BatchNormalization()(action_abs)
+		h = Add()([temp1,action_abs])
+		#h = Dense(64)(h)
+		h = Activation('relu')(h)
+		#h = BatchNormalization()(h)
 		pred = Dense(1,kernel_initializer='random_uniform')(h)
 		model = Model(inputs=[input_obs,input_actions],outputs=pred)
 		model.compile(optimizer='Adam',loss='mean_squared_error')

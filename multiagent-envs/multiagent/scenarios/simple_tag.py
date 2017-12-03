@@ -69,12 +69,13 @@ class Scenario(BaseScenario):
             border.color = np.array([0.25, 0.25, 0.25])
         # set random initial states
         for agent in world.agents:
-            agent.state.p_pos = np.random.uniform(-1, +1, world.dim_p)
+            agent.state.p_pos = np.random.uniform(-0.9, +0.9, world.dim_p)
             agent.state.p_vel = np.zeros(world.dim_p)
             agent.state.c = np.zeros(world.dim_c)
         for i, landmark in enumerate(world.landmarks):
             if not landmark.boundary:
-                landmark.state.p_pos = np.random.uniform(-0.9, +0.9, world.dim_p)
+                # landmark.state.p_pos = np.random.uniform(-0.9, +0.9, world.dim_p)
+                landmark.state.p_pos = np.asarray([0.0, 0.0])
                 landmark.state.p_vel = np.zeros(world.dim_p)
         pos = []
 
@@ -137,16 +138,19 @@ class Scenario(BaseScenario):
     def adversaries(self, world):
         return [agent for agent in world.agents if agent.adversary]
 
+    def landmarks(self, world):
+        return [landmark for landmark in world.landmarks]
 
     def reward(self, agent, world):
         # Agents are rewarded based on minimum agent distance to each landmark
+        # main_reward = self.adversary_reward(agent, world) if agent.adversary else self.agent_reward(agent, world)
         main_reward = self.adversary_reward(agent, world) if agent.adversary else self.agent_reward(agent, world)
         return main_reward
 
     def agent_reward(self, agent, world):
         # Agents are negatively rewarded if caught by adversaries
         rew = 0
-        shape = True
+        shape = False
         adversaries = self.adversaries(world)
         if shape:  # reward can optionally be shaped (increased reward for increased distance from adversary)
             for adv in adversaries:
@@ -171,7 +175,7 @@ class Scenario(BaseScenario):
 
     def adversary_reward(self, agent, world):
         # Adversaries are rewarded for collisions with agents
-        rew = 0
+        rew = 0.0
         shape = True
         agents = self.good_agents(world)
         adversaries = self.adversaries(world)
@@ -183,6 +187,17 @@ class Scenario(BaseScenario):
                 for adv in adversaries:
                     if self.is_collision(ag, adv):
                         rew += 10
+        return rew
+
+    def adversary_landmark_reward(self, world):
+        rew = 0.0
+        landmarks = self.landmarks(world)
+        adversaries = self.adversaries(world)
+        for adv in adversaries:
+            for la in landmarks:
+                if self.is_collision(adv, la):
+                    rew += 10
+                rew -= 0.1 * np.sqrt(np.sum(np.square(adv.state.p_pos - la.state.p_pos)))
         return rew
 
     def observation(self, agent, world):

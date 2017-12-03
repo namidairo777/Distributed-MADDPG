@@ -3,6 +3,7 @@ import gym
 import tensorflow as tf
 import random
 from ReplayMemory import ReplayMemory
+import time
 #from actorcritic import ActorNetwork,CriticNetwork
 
 def build_summaries(n):
@@ -37,16 +38,21 @@ def train(sess,env,args,actors,critics,noise, ave_n):
 	replayMemory = ReplayMemory(int(args['buffer_size']),int(args['random_seed']))
 
 	for ep in range(int(args['max_episodes'])):
+
+		start = time.time()
+
 		s = env.reset()
 		episode_reward = np.zeros((env.n,))
 		#episode_av_max_q = 0
 
 		for stp in range(int(args['max_episode_len'])):
+
+			action_dims_done = 0
+
 			if args['render_env']:
 				env.render()
 			
 			a = []
-			action_dims_done = 0
 
 			for i in range(env.n):
 				actor = actors[i]
@@ -59,14 +65,15 @@ def train(sess,env,args,actors,critics,noise, ave_n):
 			s = s2
 
 			# MADDPG Adversary Agent			
-			for i in range(env.n):
+			for i in range(ave_n):
+
 				actor = actors[i]
 				critic = critics[i]
 				if replayMemory.size()>int(args['minibatch_size']):
 
 					s_batch,a_batch,r_batch,d_batch,s2_batch = replayMemory.miniBatch(int(args['minibatch_size']))
 					a = []
-					for j in range(env.n):
+					for j in range(ave_n):
 						state_batch_j = np.asarray([x for x in s_batch[:,j]]) #batch processing will be much more efficient even though reshaping will have to be done
 						a.append(actors[j].predict_target(state_batch_j))
 					#print(np.asarray(a).shape)
@@ -86,12 +93,13 @@ def train(sess,env,args,actors,critics,noise, ave_n):
 					s_batch_i = np.asarray([x for x in s_batch[:,i]])
 					
 					# critic.train()
-					critic.train(s_batch_i,np.asarray([x.flatten() for x in a_batch]),np.asarray(yi))
-					#critic.train(s_batch_i,np.asarray([x.flatten() for x in a_batch[:, 0: ave_n, :]]),np.asarray(yi))
+					#critic.train(s_batch_i,np.asarray([x.flatten() for x in a_batch]),np.asarray(yi))
+					critic.train(s_batch_i,np.asarray([x.flatten() for x in a_batch[:, 0: ave_n, :]]),np.asarray(yi))
 					#predictedQValue = critic.train(s_batch,np.asarray([x.flatten() for x in a_batch]),yi)
 					#episode_av_max_q += np.amax(predictedQValue)
 					
 					actions_pred = []
+					# for j in range(ave_n):
 					for j in range(ave_n):
 						state_batch_j = np.asarray([x for x in  s2_batch[:,j]])
 						actions_pred.append(actors[j].predict(state_batch_j)) # Should work till here, roughly, probably
@@ -104,10 +112,11 @@ def train(sess,env,args,actors,critics,noise, ave_n):
 					#print("Training agent {}".format(i))
 					actor.update_target()
 					critic.update_target()
-			
+
+				action_dims_done = action_dims_done + actor.action_dim
 
 			# Only DDPG agent
-			"""
+			
 			for i in range(ave_n, env.n):
 				actor = actors[i]
 				critic = critics[i]
@@ -154,16 +163,25 @@ def train(sess,env,args,actors,critics,noise, ave_n):
 
 					action_for_critic_pred = actor.predict(s2_batch_i)
 
-					gradients = critic.action_gradients(s_batch_i, action_for_critic_pred)[:, action_dims_done:action_dims_done + actor.action_dim]
+					gradients = critic.action_gradients(s_batch_i, action_for_critic_pred)[:, :]
+
+					# check gradients
+					"""
+					grad_check = tf.check_numerics(gradients, "something wrong with gradients")
+
+					with tf.control_dependencies([grad_check]):
+  						
+						actor.train(s_batch_i, gradients)
+					"""
 
 					actor.train(s_batch_i, gradients)
-
+					
 					actor.update_target()
 
 					critic.update_target()
-			"""
+			
 
-			action_dims_done = action_dims_done + actor.action_dim
+			
 			episode_reward += r
 			#print(done)
 			if stp == int(args["max_episode_len"])-1 or np.all(done) :
@@ -175,11 +193,11 @@ def train(sess,env,args,actors,critics,noise, ave_n):
 					else:
 						good_reward += episode_reward[i]
 				#summary_str = sess.run(summary_ops, feed_dict = {summary_vars[0]: episode_reward, summary_vars[1]: episode_av_max_q/float(stp)})
-				summary_str = sess.run(summary_ops, feed_dict = {summary_vars[0]: ave_reward, summary_vars[1]: good_reward})
-				writer.add_summary(summary_str,ep)
+				# summary_str = sess.run(summary_ops, feed_dict = {summary_vars[0]: ave_reward, summary_vars[1]: good_reward})
+				#writer.add_summary(summary_str,ep)
 				
 
-				writer.flush()
+				#writer.flush()
 
 				#print ('|Reward: {:d}| Episode: {:d}| Qmax: {:.4f}'.format(int(episode_reward),ep,(episode_av_max_q/float(stp))))
 				showReward(episode_reward, env.n, ep)
@@ -189,19 +207,23 @@ def train(sess,env,args,actors,critics,noise, ave_n):
 				#showReward(episode_reward, env.n, ep)
 
 				# save model
-		if ep % 200 == 0 and ep != 0:
-			print("Starting saving model every 200 episodes")
+		if ep % 50 == 0 and ep != 0:
+			print("Starting saving model weights every 50 episodes")
 			for i in range(env.n):
-				saveModel(actors[i], i, args["modelFolder"])
-			print("Model saved")
+				# saveModel(actors[i], i, args["modelFolder"])
+				saveWeights(actors[i], i, args["modelFolder"])
+			print("Model weights saved")
+
+		print("Cost Time: ", int(time.time() - start), "s")
+
 
 def saveModel(actor, i, pathToSave):
 	actor.mainModel.save(pathToSave + str(i) + ".h5")
 
+def saveWeights(actor, i, pathToSave):
+	actor.mainModel.save_weights(pathToSave + str(i) + "_weights.h5")
+
 def showReward(episode_reward, n, ep):
-	reward = ""
-	for i in range(n):
-		reward += str(int(episode_reward[i])) + " "
-	print ('|Reward: {:s}	| Episode: {:d}'.format(reward, ep))
+	print ('|Episode: {:d}	| Rewards: {:5.2f} {:5.2f} {:5.2f}'.format(ep, episode_reward[0], episode_reward[1], episode_reward[2]))
 
 

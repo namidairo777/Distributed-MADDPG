@@ -80,19 +80,19 @@ def main(args):
         if args["runTest"]:
 
             # , force=True
-            env = wrappers.Monitor(env, args["monitor_dir"])
+            # env = wrappers.Monitor(env, args["monitor_dir"], force=True)
 
             for i in range(n):
                 # load model
                 actors[i].mainModel.load_weights('results/actor'+str(i)+'_weights'+'.h5')
-            
+                # episode 4754
             import time
             for ep in range(50):
                 s = env.reset()
                 reward = 0.0
-                for step in range(200):
+                for step in range(1000):
                     
-                    time.sleep(0.02)
+                    time.sleep(0.01)
                     env.render()
                     actions = []
                     for i in range(env.n):

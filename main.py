@@ -52,7 +52,7 @@ def main(args):
         for i in range(ave_n):
             total_action_dim = total_action_dim + env.action_space[i].n
 
-        # print("total_action_dim", total_action_dim)
+        print("total_action_dim", total_action_dim)
 
         for i in range(n):
 
@@ -84,15 +84,16 @@ def main(args):
 
             for i in range(n):
                 # load model
-                actors[i].mainModel.load_weights('results/actor'+str(i)+'_weights'+'.h5')
+                actors[i].mainModel.load_weights(args["modelFolder"]+str(i)+'_weights'+'.h5')
                 # episode 4754
             import time
+            #   time.sleep(3)
             for ep in range(50):
                 s = env.reset()
                 reward = 0.0
-                for step in range(1000):
+                for step in range(200):
                     
-                    time.sleep(0.01)
+                    time.sleep(0.03)
                     env.render()
                     actions = []
                     for i in range(env.n):
@@ -178,8 +179,8 @@ if __name__ == '__main__':
     parser.add_argument('--render-env', help='render the gym env', action='store_true')
     parser.add_argument('--use-gym-monitor', help='record gym results', action='store_true')
     parser.add_argument('--monitor-dir', help='directory for storing gym results', default='./results/videos/video1')
-    parser.add_argument('--summary-dir', help='directory for storing tensorboard info', default='./results/maddpg2_vs_ddpg_1/tf_data')
-    parser.add_argument('--modelFolder', help='the folder which saved model data', default="./results/actor")
+    parser.add_argument('--summary-dir', help='directory for storing tensorboard info', default='./results/maddpg2_vs_ddpg1/simple/')
+    parser.add_argument('--modelFolder', help='the folder which saved model data', default="./results/2vs1_simple/actor_")
     parser.add_argument('--runTest', help='use saved model to run', default=True)
 
     parser.set_defaults(render_env=False)

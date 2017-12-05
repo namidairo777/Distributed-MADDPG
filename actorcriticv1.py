@@ -6,6 +6,103 @@ from keras.optimizers import Adam
 import keras.backend as K
 # from keras.callbacks import EarlyStopoing, TensorBoard
 
+class Brain(object):
+	"""
+	Brain consists of actor, old actor and critic.
+	"""
+	def __init__(self, sess, actor_state_dim, actor_action_dim, actor_lr, actor_tau, \
+					critic_state_dim, critic_action_dim, critic_lr, critic_tau, gamma):
+		self.sess = sess
+		K.set_session(sess)
+		K.set_learning_phase(1)
+
+		# Initiation
+		self.actor_state_dim = actor_state_dim
+		self.critic_state_dim = critic_state_dim
+		self.critic_action_dim = critic_action_dim
+
+		# Construct Actor, old Actor, Critic network 
+		self.actor, self.actor_weights, self.actor_input_state = self._build_actor_model()
+		self.critic, self.critic_input_actions, self.critic_input_state = self._build_critic_model()
+
+		# critic update
+		self.discounted_reward = Input(shape=(1, ))
+		self.Q = self.critic.predict(self.critic_input_actions, self.critic_input_state)
+		self.advantage = self.discounted_reward - self.Q
+
+		self.critic_loss = tf.reduce_mean(tf.square(self.advantage))
+		self.critic_train = tf.train.AdamOptimizer(criric_lr).minimize(self.critic_loss)
+
+		# actor update
+		# ratio 
+		# self.advantage_for_clip = Input(shape=(1, ))
+		ratio = self.actor.pi.prob(action) / (self.old_actor.prob(action) + 1e-5)
+
+		surr = ratio * self.advantage
+
+		self.actor_loss = -tf.reduce_mean(tf.minimum(        # clipped surrogate objective
+            surr,
+            tf.clip_by_value(ratio, 1. - EPSILON, 1. + EPSILON) * self.advantage))
+
+		self.actor_train = tf.train.AdamOptimizer(actor_lr).minimize(self.actor_loss)
+		self.sess.run(tf.global_variables_initializer())
+
+	def _build_actor_model(self):
+		input_obs = Input(shape=(self.actor_state_dim, ))
+		h = Dense(400)(input_obs)
+		h = Activation('relu')(h)
+
+		h = Dense(300)(h)
+		h = Activation('relu')(h)
+
+		h = Dense(self.action_dim)(h)
+		h = Activation('softmax')(h)
+
+		pred = Dense(1, kernel_initializer='random_normal')(h)		
+		model = Model(inputs=input_obs, outputs=pred)
+		model.compile(optimizer='Adam', loss='categorical_crossentropy')
+		
+		return model, model.trainable_weights, input_obs
+
+
+	def _build_critic_model(self):
+		input_obs = Input(shape=(self.critic_state_dim,))
+		input_actions = Input(shape=(self.critic_action_dim,))
+		h = Dense(64)(input_obs)
+		h = Activation('relu')(h)
+
+		action_abs = Dense(64)(input_actions)
+		temp1 = Dense(64)(h)
+
+		h = Add()([temp1,action_abs])
+		h = Activation('relu')(h)
+
+		pred = Dense(1,kernel_initializer='random_uniform')(h)
+		model = Model(inputs=[input_obs,input_actions],outputs=pred)
+		# , metrics=['mae']
+		model.compile(optimizer='Adam',loss='mean_squared_error')
+		
+		return model, input_obs, input_actions
+
+	def update(self):
+		global GLOBAL_UPDATE_COUNTER
+		while not COOR
+
+
+
+
+	def choose_action(self):
+
+
+class Worker(object):
+    def __init__(self, wid):
+        self.wid = wid
+        self.env = gym.make(GAME).unwrapped
+        self.ppo = GLOBAL_PPO
+
+    def work(self):
+
+
 ##################################
 ##### Actor network
 ##################################
@@ -29,22 +126,6 @@ class ActorNetwork(object):
 		grads = zip(self.params_grad,self.mainModel_weights)
 		self.optimize = tf.train.AdamOptimizer(-self.lr).apply_gradients(grads)
 		self.sess.run(tf.global_variables_initializer())
-	
-	# Network architecture
-	def _build_model(self):
-		input_obs = Input(shape=(self.state_dim,))
-		h = Dense(64)(input_obs)
-		h = Activation('relu')(h)
-		h = BatchNormalization()(h)
-		h = Dense(64)(h)
-		h = Activation('relu')(h)
-		h = BatchNormalization()(h)
-		h = Dense(self.action_dim)(h)
-		pred = Activation('softmax')(h)
-		#pred = tf.contrib.distributions.RelaxedOneHotCategorical(0.1,probs=h).sample()
-		model = Model(inputs=input_obs,outputs=pred)
-		model.compile(optimizer='Adam',loss='categorical_crossentropy')
-		return model,model.trainable_weights,input_obs
 
 	def _build_hard_model(self):
 		input_obs = Input(shape=(self.state_dim,))
@@ -127,47 +208,6 @@ class CriticNetwork(object):
 		self.targetModel,_,_ = self._build_simple_model()
 		self.action_grads  = tf.gradients(self.mainModel.output,self.actions)
 		self.sess.run(tf.global_variables_initializer())
-
-	# Network architecture
-	def _build_model(self):
-		with tf.name_scope("Critic_state_input"):
-			input_obs = Input(shape=(self.state_dim,))
-		with tf.name_scope("Critic_action_input"):
-			input_actions = Input(shape=(self.action_dim,))
-
-		h = Dense(64)(input_obs)
-		h = Activation('relu')(h)
-		h = BatchNormalization()(h)
-		action_abs = Dense(64)(input_actions)
-		action_abs = Activation('relu')(action_abs)
-		action_abs = BatchNormalization()(action_abs)
-		h = Concatenate()([h,action_abs])
-		h = Dense(64)(h)
-		h = Activation('relu')(h)
-		h = BatchNormalization()(h)
-		pred = Dense(1,kernel_initializer='random_uniform')(h)
-		model = Model(inputs=[input_obs,input_actions],outputs=pred)
-		model.compile(optimizer='Adam',loss='mean_squared_error')
-		return model,input_obs,input_actions
-
-	def _build_hard_model(self):
-		input_obs = Input(shape=(self.state_dim,))
-		input_actions = Input(shape=(self.action_dim,))
-		h = Dense(400)(input_obs)
-		h = Activation('relu')(h)
-		#h = BatchNormalization()(h)
-		action_abs = Dense(300)(input_actions)
-		temp1 = Dense(300)(h)
-		#action_abs = Activation('relu')(action_abs)
-		#action_abs = BatchNormalization()(action_abs)
-		h = Add()([temp1,action_abs])
-		#h = Dense(64)(h)
-		h = Activation('relu')(h)
-		#h = BatchNormalization()(h)
-		pred = Dense(1,kernel_initializer='random_uniform')(h)
-		model = Model(inputs=[input_obs,input_actions],outputs=pred)
-		model.compile(optimizer='Adam',loss='mean_squared_error')
-		return model,input_obs,input_actions
 
 	# Simple Network model
 	def _build_simple_model(self):

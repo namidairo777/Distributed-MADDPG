@@ -37,6 +37,32 @@ class Brain(object):
 		Clipped surrogate objective
 		Loss = min(ratio * adv, clip(ratio, 1-0.2, 1+0.2) * advantage)
 		Actor optimization Adam optimizer(-loss)
+		
+		###########
+		##  Actor 
+		###########
+		Input = state_dim
+		Dense(400) -> Relu
+		Dense(300) -> Relu
+		sigma = Dense(action_dim)
+		mu = 2 * tf.layers.dense(l1, A_DIM, tf.nn.tanh, trainable=trainable)
+		tf.distributions.Normal(loc=mu, scale=sigma)
+
+
+		###########
+		##  Critic
+		##########
+		Input1 = state_dim
+		Input2 = action_dim
+		obs = Dense(400)(input1) -> relu
+		actions = Dense(300)(input2) -> relu
+		temp_obs = Dense(300)(obs)
+		Add()(temp_obs, actions) -> relu
+
+
+		actor loss = 
+
+
 		"""
 
 

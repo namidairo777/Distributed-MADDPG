@@ -3,23 +3,29 @@ import gym
 import tensorflow as tf
 import random
 from ReplayMemory import ReplayMemory
+from keras.callbacks import TensorBoard
 import time
 #from actorcritic import ActorNetwork,CriticNetwork
 
 def build_summaries(n):
 	#episode_reward = tf.get_variable("episode_reward",[1,n])
 	# record reward summay 
-	ave_reward = tf.Variable(0.)
-	good_reward = tf.Variable(0.)
+	# ave_reward = tf.Variable(0.)
+	# good_reward = tf.Variable(0.)
 	# episode_reward =   tf.Variable(0.)
-	tf.summary.scalar("Ave_Reward",ave_reward)
-	tf.summary.scalar("Good_Reward",good_reward)
+	# tf.summary.scalar("Ave_Reward",ave_reward)
+	# tf.summary.scalar("Good_Reward",good_reward)
 
+	losses = [tf.Variable(0.) for i in range(n)]
+
+	for i in range(n):
+		tf.summary.scalar("Loss_Agent" + str(i), losses[i])
 	
 	#episode_ave_max_q = tf.Variable("episode_av_max_")
 	#tf.summary.scalar("QMaxValue",episode_ave_max_q)
 	#summary_vars = [episode_reward,episode_ave_max_q]
-	summary_vars = [ave_reward, good_reward]
+	# summary_vars = [ave_reward, good_reward]
+	summary_vars = losses
 	summary_ops = tf.summary.merge_all()
 	return summary_ops, summary_vars
 
@@ -29,10 +35,18 @@ def train(sess,env,args,actors,critics,noise, ave_n):
 	init = tf.global_variables_initializer()
 	sess.run(init)
 	writer = tf.summary.FileWriter(args['summary_dir'],sess.graph)
+	
+	# callbacks = []
+	# train_names = ['train_loss', 'train_mae']
+	# callback = TensorBoard(args['summary_dir'])
 
 	for actor in actors:
 		actor.update_target()
 	for critic in critics:
+		# callback = TensorBoard(args['summary_dir'])
+		# callback.set_model(critic.mainModel)
+		# callbacks.append(callback)
+
 		critic.update_target()
 	
 	replayMemory = ReplayMemory(int(args['buffer_size']),int(args['random_seed']))
@@ -47,6 +61,7 @@ def train(sess,env,args,actors,critics,noise, ave_n):
 
 		for stp in range(int(args['max_episode_len'])):
 
+			losses = []
 			action_dims_done = 0
 
 			if args['render_env']:
@@ -94,7 +109,13 @@ def train(sess,env,args,actors,critics,noise, ave_n):
 					
 					# critic.train()
 					#critic.train(s_batch_i,np.asarray([x.flatten() for x in a_batch]),np.asarray(yi))
-					critic.train(s_batch_i,np.asarray([x.flatten() for x in a_batch[:, 0: ave_n, :]]),np.asarray(yi))
+					loss = critic.train(s_batch_i,np.asarray([x.flatten() for x in a_batch[:, 0: ave_n, :]]),np.asarray(yi))
+
+					losses.append(loss)
+
+					# callback.set_model(critic.mainModel)
+
+					# write_log(callback, train_names, logs, ep)
 					#predictedQValue = critic.train(s_batch,np.asarray([x.flatten() for x in a_batch]),yi)
 					#episode_av_max_q += np.amax(predictedQValue)
 					
@@ -157,9 +178,12 @@ def train(sess,env,args,actors,critics,noise, ave_n):
 					# state batch for agent i
 					s_batch_i= np.asarray([x for x in s_batch[:, i]])
 
-					critic.train(s_batch_i, np.asarray([x.flatten() for x in a_batch[:, i]]), np.asarray(y_i))
+					loss = critic.train(s_batch_i, np.asarray([x.flatten() for x in a_batch[:, i]]), np.asarray(y_i))
 
-					
+					losses.append(loss)
+					# callback.set_model(critic.mainModel)
+
+					# write_log(callback, train_names, logs, ep)
 
 					action_for_critic_pred = actor.predict(s2_batch_i)
 
@@ -185,6 +209,7 @@ def train(sess,env,args,actors,critics,noise, ave_n):
 			episode_reward += r
 			#print(done)
 			if stp == int(args["max_episode_len"])-1 or np.all(done) :
+				"""
 				ave_reward = 0.0
 				good_reward = 0.0
 				for i in range(env.n):
@@ -192,14 +217,13 @@ def train(sess,env,args,actors,critics,noise, ave_n):
 						ave_reward += episode_reward[i]
 					else:
 						good_reward += episode_reward[i]
-				#summary_str = sess.run(summary_ops, feed_dict = {summary_vars[0]: episode_reward, summary_vars[1]: episode_av_max_q/float(stp)})
+				"""
+				# summary_str = sess.run(summary_ops, feed_dict = {summary_vars[0]: episode_reward, summary_vars[1]: episode_av_max_q/float(stp)})
 				# summary_str = sess.run(summary_ops, feed_dict = {summary_vars[0]: ave_reward, summary_vars[1]: good_reward})
-				#writer.add_summary(summary_str,ep)
-				
-
-				#writer.flush()
-
-				#print ('|Reward: {:d}| Episode: {:d}| Qmax: {:.4f}'.format(int(episode_reward),ep,(episode_av_max_q/float(stp))))
+				summary_str = sess.run(summary_ops, feed_dict = {summary_vars[i]: losses[i] for i in range(len(losses))})
+				writer.add_summary(summary_str, ep)
+				writer.flush()
+				# print ('|Reward: {:d}| Episode: {:d}| Qmax: {:.4f}'.format(int(episode_reward),ep,(episode_av_max_q/float(stp))))
 				showReward(episode_reward, env.n, ep)
 				break
 
@@ -226,4 +250,11 @@ def saveWeights(actor, i, pathToSave):
 def showReward(episode_reward, n, ep):
 	print ('|Episode: {:d}	| Rewards: {:5.2f} {:5.2f} {:5.2f}'.format(ep, episode_reward[0], episode_reward[1], episode_reward[2]))
 
-
+def write_log(callback, names, logs, batch_no):
+    for name, value in zip(names, logs):
+        summary = tf.Summary()
+        summary_value = summary.value.add()
+        summary_value.simple_value = value
+        summary_value.tag = name
+        callback.writer.add_summary(summary, batch_no)
+        callback.writer.flush()

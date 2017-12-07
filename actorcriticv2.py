@@ -22,8 +22,8 @@ class ActorNetwork(object):
 		self.action_dim = action_dim
 		self.lr =  lr
 		self.tau = tau
-		self.mainModel,self.mainModel_weights,self.mainModel_state = self._build_simple_model()
-		self.targetModel,self.targetModel_weights,_ = self._build_simple_model()
+		self.mainModel,self.mainModel_weights,self.mainModel_state = self._build_hard_model()
+		self.targetModel,self.targetModel_weights,_ = self._build_hard_model()
 		self.action_gradient = tf.placeholder(tf.float32,[None,self.action_dim])
 		self.params_grad = tf.gradients(self.mainModel.output, self.mainModel_weights, self.action_gradient)
 		grads = zip(self.params_grad,self.mainModel_weights)
@@ -123,8 +123,8 @@ class CriticNetwork(object):
 		self.tau = tau
 		self.num_agents = num_agents
 		self.gamma  =  gamma
-		self.mainModel,self.state,self.actions = self._build_simple_model()
-		self.targetModel,_,_ = self._build_simple_model()
+		self.mainModel,self.state,self.actions = self._build_hard_model()
+		self.targetModel,_,_ = self._build_hard_model()
 		self.action_grads  = tf.gradients(self.mainModel.output,self.actions)
 		self.sess.run(tf.global_variables_initializer())
 

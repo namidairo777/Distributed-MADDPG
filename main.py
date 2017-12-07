@@ -9,8 +9,14 @@ from actorcriticv2 import ActorNetwork,CriticNetwork
 from Train import train
 import argparse
 from keras.models import load_model
+import os
 
 def main(args):
+
+    if not os.path.exists(args["modelFolder"]):
+        os.makedirs(args["modelFolder"])
+    if not os.path.exists(args["summary_dir"]):
+        os.makedirs(args["summary_dir"])
 
 
     #with tf.device("/gpu:0"):
@@ -38,7 +44,7 @@ def main(args):
                 ave_n += 1
             else:
                 good_n += 1
-
+        print("adversary ", ave_n, "target ", good_n)
         # print("ave_n", ave_n)
         n = env.n
         actors = []
@@ -65,7 +71,7 @@ def main(args):
                 critics.append(CriticNetwork(sess,n,observation_dim[i],total_action_dim,float(args['critic_lr']),float(args['tau']),float(args['gamma'])))
             else:
                 # DDPG
-                critics.append(CriticNetwork(sess,n,observation_dim[i],action_dim[i],float(args['actor_lr']),float(args['tau']),float(args['gamma'])))
+                critics.append(CriticNetwork(sess,n,observation_dim[i],action_dim[i],float(args['critic_lr']),float(args['tau']),float(args['gamma'])))
             
             exploration_noise.append(OUNoise(mu = np.zeros(action_dim[i])))
 
@@ -113,6 +119,36 @@ def main(args):
             env.close()
             import sys
             sys.exit("test over!")
+
+        if False:
+            import time
+            # , force=True
+            # env = wrappers.Monitor(env, args["monitor_dir"], force=True)
+            for ep in range(200, 5000, 200):
+                # load model
+                s = env.reset()
+                for j in range(env.n):
+                    actors[j].mainModel.load_weights(args["modelFolder"]+"ep" + str(ep)+"/" + str(j) +'_weights'+'.h5')
+                for step in range(300):
+                    
+                    reward = 0.0
+                    # time.sleep(0.05)
+                    env.render()
+                    actions = []
+                    for i in range(env.n):
+                        state_input = np.reshape(s[i],(-1,env.observation_space[i].shape[0]))
+                        noise = OUNoise(mu = np.zeros(5))
+                        # predict_action = actors[i].predict(state_input) #+ exploration_noise[i]()
+                        # actions.append(predict_action.reshape(env.action_space[i].n,))
+                        # +noise()
+                        actions.append((actors[i].predict(np.reshape(s[i],(-1, actors[i].mainModel.input_shape[1])))).reshape(actors[i].mainModel.output_shape[1],))
+                    s, r, d, s2 = env.step(actions)
+                    for i in range(env.n):
+                        reward += r[i]
+                    if np.all(d):
+                        break
+                print("Episode: {:d}  | Reward: {:f}".format(ep, reward))
+            
         else:
             train(sess,env,args,actors,critics,exploration_noise, ave_n)
         #if args['use_gym_monitor']:
@@ -179,8 +215,8 @@ if __name__ == '__main__':
     parser.add_argument('--render-env', help='render the gym env', action='store_true')
     parser.add_argument('--use-gym-monitor', help='record gym results', action='store_true')
     parser.add_argument('--monitor-dir', help='directory for storing gym results', default='./results/videos/video1')
-    parser.add_argument('--summary-dir', help='directory for storing tensorboard info', default='./results/maddpg2_vs_ddpg1/simple/')
-    parser.add_argument('--modelFolder', help='the folder which saved model data', default="./results/2vs1_simple/actor_")
+    parser.add_argument('--summary-dir', help='directory for storing tensorboard info', default='./results/3vs1_simple/tfdata/')
+    parser.add_argument('--modelFolder', help='the folder which saved model data', default="./results/3vs1_simple/weights/")
     parser.add_argument('--runTest', help='use saved model to run', default=True)
 
     parser.set_defaults(render_env=False)

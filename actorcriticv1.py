@@ -23,6 +23,7 @@ class Brain(object):
 
 		# Construct Actor, old Actor, Critic network 
 		self.actor, self.actor_weights, self.actor_input_state = self._build_actor_model()
+		self.old_actor, self.old_actor_weights, self.actor_input_state = self._build_actor_model()
 		self.critic, self.critic_input_actions, self.critic_input_state = self._build_critic_model()
 
 		# critic update
@@ -32,6 +33,11 @@ class Brain(object):
 
 		self.critic_loss = tf.reduce_mean(tf.square(self.advantage))
 		self.critic_train = tf.train.AdamOptimizer(criric_lr).minimize(self.critic_loss)
+
+		# update old pi
+		self.sample_actor = tf.squeeze(self.actor.output.sample(1), axis=0)
+		
+
 
 		# actor update
 		# ratio 
@@ -84,9 +90,14 @@ class Brain(object):
 		
 		return model, input_obs, input_actions
 
+	def _update_old_actor(self):
+		self.update_old_actor = self.critic.set_weights(np.asarray(self.actor.get_weights()))
+
 	def update(self):
-		global GLOBAL_UPDATE_COUNTER
-		while not COOR
+		# udpate old pi
+		_update_old_actor()
+		# get data from QUEUE
+		# get data from 
 
 
 

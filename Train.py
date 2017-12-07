@@ -4,7 +4,7 @@ import tensorflow as tf
 import random
 from ReplayMemory import ReplayMemory
 from keras.callbacks import TensorBoard
-import time
+import time, os
 #from actorcritic import ActorNetwork,CriticNetwork
 
 def build_summaries(n):
@@ -34,7 +34,7 @@ def train(sess,env,args,actors,critics,noise, ave_n):
 	summary_ops,summary_vars = build_summaries(env.n)
 	init = tf.global_variables_initializer()
 	sess.run(init)
-	writer = tf.summary.FileWriter(args['summary_dir'],sess.graph)
+	writer = tf.summary.FileWriter(args['summary_dir'], sess.graph)
 	
 	# callbacks = []
 	# train_names = ['train_loss', 'train_mae']
@@ -220,17 +220,17 @@ def train(sess,env,args,actors,critics,noise, ave_n):
 				"""
 				# summary_str = sess.run(summary_ops, feed_dict = {summary_vars[0]: episode_reward, summary_vars[1]: episode_av_max_q/float(stp)})
 				# summary_str = sess.run(summary_ops, feed_dict = {summary_vars[0]: ave_reward, summary_vars[1]: good_reward})
-				summary_str = sess.run(summary_ops, feed_dict = {summary_vars[i]: losses[i] for i in range(len(losses))})
-				writer.add_summary(summary_str, ep)
-				writer.flush()
+				#summary_str = sess.run(summary_ops, feed_dict = {summary_vars[i]: losses[i] for i in range(len(losses))})
+				#writer.add_summary(summary_str, ep)
+				#writer.flush()
 				# print ('|Reward: {:d}| Episode: {:d}| Qmax: {:.4f}'.format(int(episode_reward),ep,(episode_av_max_q/float(stp))))
-				showReward(episode_reward, env.n, ep)
+				showReward(episode_reward, env.n, ep, start)
 				break
 
 			#if stp == int(args['max_episode_len'])-1:
 				#showReward(episode_reward, env.n, ep)
 
-				# save model
+		# save model
 		if ep % 50 == 0 and ep != 0:
 			print("Starting saving model weights every 50 episodes")
 			for i in range(env.n):
@@ -238,7 +238,18 @@ def train(sess,env,args,actors,critics,noise, ave_n):
 				saveWeights(actors[i], i, args["modelFolder"])
 			print("Model weights saved")
 
-		print("Cost Time: ", int(time.time() - start), "s")
+		if ep % 200 == 0 and ep != 0:
+			directory = args["modelFolder"] + "ep" + str(ep) + "/"
+			if not os.path.exists(directory):
+				os.makedirs(directory)
+			print("Starting saving model weights to folder every 200 episodes")
+			for i in range(env.n):
+				# saveModel(actors[i], i, args["modelFolder"])
+				saveWeights(actors[i], i, directory)
+			print("Model weights saved to folder")
+
+
+		# print("Cost Time: ", int(time.time() - start), "s")
 
 
 def saveModel(actor, i, pathToSave):
@@ -247,8 +258,8 @@ def saveModel(actor, i, pathToSave):
 def saveWeights(actor, i, pathToSave):
 	actor.mainModel.save_weights(pathToSave + str(i) + "_weights.h5")
 
-def showReward(episode_reward, n, ep):
-	print ('|Episode: {:d}	| Rewards: {:5.2f} {:5.2f} {:5.2f}'.format(ep, episode_reward[0], episode_reward[1], episode_reward[2]))
+def showReward(episode_reward, n, ep, start):
+	print ('|Episode: {:4d} | Time: {:2d} | Rewards: {:5.2f} {:5.2f} {:5.2f} {:5.2f} '.format(ep, int(time.time() - start), episode_reward[0], episode_reward[1], episode_reward[2], episode_reward[3]))
 
 def write_log(callback, names, logs, batch_no):
     for name, value in zip(names, logs):

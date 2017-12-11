@@ -22,8 +22,8 @@ class ActorNetwork(object):
 		self.action_dim = action_dim
 		self.lr =  lr
 		self.tau = tau
-		self.mainModel,self.mainModel_weights,self.mainModel_state = self._build_hard_model()
-		self.targetModel,self.targetModel_weights,_ = self._build_hard_model()
+		self.mainModel,self.mainModel_weights,self.mainModel_state = self._build_model()
+		self.targetModel,self.targetModel_weights,_ = self._build_model()
 		self.action_gradient = tf.placeholder(tf.float32,[None,self.action_dim])
 		self.params_grad = tf.gradients(self.mainModel.output, self.mainModel_weights, self.action_gradient)
 		grads = zip(self.params_grad,self.mainModel_weights)
@@ -33,10 +33,10 @@ class ActorNetwork(object):
 	# Network architecture
 	def _build_model(self):
 		input_obs = Input(shape=(self.state_dim,))
-		h = Dense(64)(input_obs)
+		h = Dense(128)(input_obs)
 		h = Activation('relu')(h)
 		h = BatchNormalization()(h)
-		h = Dense(64)(h)
+		h = Dense(128)(h)
 		h = Activation('relu')(h)
 		h = BatchNormalization()(h)
 		h = Dense(self.action_dim)(h)
@@ -123,30 +123,29 @@ class CriticNetwork(object):
 		self.tau = tau
 		self.num_agents = num_agents
 		self.gamma  =  gamma
-		self.mainModel,self.state,self.actions = self._build_hard_model()
-		self.targetModel,_,_ = self._build_hard_model()
+		self.mainModel,self.state,self.actions = self._build_model()
+		self.targetModel,_,_ = self._build_model()
 		self.action_grads  = tf.gradients(self.mainModel.output,self.actions)
 		self.sess.run(tf.global_variables_initializer())
 
 	# Network architecture
 	def _build_model(self):
-		with tf.name_scope("Critic_state_input"):
-			input_obs = Input(shape=(self.state_dim,))
-		with tf.name_scope("Critic_action_input"):
-			input_actions = Input(shape=(self.action_dim,))
-
-		h = Dense(64)(input_obs)
+		input_obs = Input(shape=(self.state_dim,))
+		input_actions = Input(shape=(self.action_dim,))
+		h = Dense(128)(input_obs)
 		h = Activation('relu')(h)
-		h = BatchNormalization()(h)
-		action_abs = Dense(64)(input_actions)
-		action_abs = Activation('relu')(action_abs)
-		action_abs = BatchNormalization()(action_abs)
-		h = Concatenate()([h,action_abs])
-		h = Dense(64)(h)
+		#h = BatchNormalization()(h)
+		action_abs = Dense(128)(input_actions)
+		temp1 = Dense(128)(h)
+		#action_abs = Activation('relu')(action_abs)
+		#action_abs = BatchNormalization()(action_abs)
+		h = Add()([temp1,action_abs])
+		#h = Dense(64)(h)
 		h = Activation('relu')(h)
-		h = BatchNormalization()(h)
+		#h = BatchNormalization()(h)
 		pred = Dense(1,kernel_initializer='random_uniform')(h)
 		model = Model(inputs=[input_obs,input_actions],outputs=pred)
+		# , metrics=['mae']
 		model.compile(optimizer='Adam',loss='mean_squared_error')
 		return model,input_obs,input_actions
 

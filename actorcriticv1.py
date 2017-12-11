@@ -8,6 +8,7 @@ import keras.backend as K
 
 class Brain(object):
 	"""
+	Brain consists n agents.
 	Brain consists of actor, old actor and critic.
 	"""
 	def __init__(self, sess, actor_state_dim, actor_action_dim, actor_lr, actor_tau, \
@@ -108,11 +109,50 @@ class Brain(object):
 class Worker(object):
     def __init__(self, wid):
         self.wid = wid
-        self.env = gym.make(GAME).unwrapped
-        self.ppo = GLOBAL_PPO
+        self.env = make_env.make_env("simple_tag")
+        self.brains = GLOBAL_BRAINS
 
     def work(self):
+    	while not COORD.should_stop():
+    		s = self.env.reset()
+    		ep_r = [0] * env.n
+    		buffer_s, buffer_a, buffer_r = [], [], []
+    		for t in range(EP_LEN):
+    			if not ROLLING_EVENT.is_set():
+    				ROLLING_EVENT.wait()
+    				buffer_s, buffer_a, buffer_r = [], [], []
+    			actions = []
+    			for i in range(self.brains):
+    				actions.append(self.brains[i].choose_action(np.reshape(s[i],(-1, self.state_dim))).reshape(self.action_dim,))
+    			s, r, done, s2 = self.env.step(actions)
 
+    			buffer_s.append(s)
+    			buffer_a.append(actions)
+    			buffer_r.append(r)
+
+    			for i in range(ep_r):
+    				ep_r[i] += r[i]
+
+    			GLOBAL_UPDATE_COUNTER += 1
+    			if t == EP_LEN - 1 or GLOBAL_UPDATE_COUNTER >= MIN_BATCH_SIZE:
+    				value_state_ = self.barin.get_value(s2)
+    				discounted_reward = []
+    				for r in buffer_r[:: -1]:
+    					value_state_ = r + self.gamma + value_state_
+    					discounted_reward.append(value_state_)
+    				discounted_reward.reverse()
+
+    				bs, ba, br = np.vstack(buffer_s), np.vstack(buffer_a), np.vstack(buffer_r)
+    				buffer_s, buffer_a, buffer_r = [], [], []
+    				QUEUE.put(np.hstack((bs, ba, br)))
+
+    				if GLOBAL_UPDATE_COUNTER >= MIN_BATCH_SIZE:
+    					ROLLING_EVENT.clear()
+    					UPDATE_E
+
+
+
+    				
 
 ##################################
 ##### Actor network

@@ -80,7 +80,7 @@ def train(sess,env,args,actors,critics,noise, ave_n):
 			s = s2
 
 			# MADDPG Adversary Agent			
-			for i in range(ave_n):
+			for i in range(env.n):
 
 				actor = actors[i]
 				critic = critics[i]
@@ -88,7 +88,7 @@ def train(sess,env,args,actors,critics,noise, ave_n):
 
 					s_batch,a_batch,r_batch,d_batch,s2_batch = replayMemory.miniBatch(int(args['minibatch_size']))
 					a = []
-					for j in range(ave_n):
+					for j in range(env.n):
 						state_batch_j = np.asarray([x for x in s_batch[:,j]]) #batch processing will be much more efficient even though reshaping will have to be done
 						a.append(actors[j].predict_target(state_batch_j))
 					#print(np.asarray(a).shape)
@@ -109,7 +109,7 @@ def train(sess,env,args,actors,critics,noise, ave_n):
 					
 					# critic.train()
 					#critic.train(s_batch_i,np.asarray([x.flatten() for x in a_batch]),np.asarray(yi))
-					loss = critic.train(s_batch_i,np.asarray([x.flatten() for x in a_batch[:, 0: ave_n, :]]),np.asarray(yi))
+					loss = critic.train(s_batch_i,np.asarray([x.flatten() for x in a_batch[:, 0: env.n, :]]),np.asarray(yi))
 
 					losses.append(loss)
 
@@ -121,7 +121,7 @@ def train(sess,env,args,actors,critics,noise, ave_n):
 					
 					actions_pred = []
 					# for j in range(ave_n):
-					for j in range(ave_n):
+					for j in range(env.n):
 						state_batch_j = np.asarray([x for x in  s2_batch[:,j]])
 						actions_pred.append(actors[j].predict(state_batch_j)) # Should work till here, roughly, probably
 
@@ -138,7 +138,7 @@ def train(sess,env,args,actors,critics,noise, ave_n):
 
 			# Only DDPG agent
 			
-			for i in range(ave_n, env.n):
+			for i in range(ave_n, ave_n):
 				actor = actors[i]
 				critic = critics[i]
 				if replayMemory.size() > int(args["minibatch_size"]):

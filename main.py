@@ -6,7 +6,9 @@ import numpy as np
 #from ReplayMemory import ReplayMemory
 from ExplorationNoise import OrnsteinUhlenbeckActionNoise as OUNoise
 from actorcriticv2 import ActorNetwork,CriticNetwork
+#from actorcriticv1 import Brain, Worker
 from Train import train
+#from Train1 import learn
 import argparse
 from keras.models import load_model
 import os
@@ -49,13 +51,14 @@ def main(args):
         n = env.n
         actors = []
         critics = []
+        brains = []
         exploration_noise = []
         observation_dim = []
         action_dim = []
         total_action_dim = 0
 
         # Aversary Agents action spaces
-        for i in range(ave_n):
+        for i in range(env.n):
             total_action_dim = total_action_dim + env.action_space[i].n
 
         print("total_action_dim", total_action_dim)
@@ -65,23 +68,35 @@ def main(args):
             observation_dim.append(env.observation_space[i].shape[0])
             action_dim.append(env.action_space[i].n) # assuming discrete action space here -> otherwise change to something like env.action_space[i].shape[0]
             actors.append(ActorNetwork(sess,observation_dim[i],action_dim[i],float(args['actor_lr']),float(args['tau'])))
+            critics.append(CriticNetwork(sess,n,observation_dim[i],total_action_dim,float(args['critic_lr']),float(args['tau']),float(args['gamma'])))
             
+            """
             if i < ave_n:
                 #MADDPG - centralized Critic
                 critics.append(CriticNetwork(sess,n,observation_dim[i],total_action_dim,float(args['critic_lr']),float(args['tau']),float(args['gamma'])))
             else:
                 # DDPG
                 critics.append(CriticNetwork(sess,n,observation_dim[i],action_dim[i],float(args['critic_lr']),float(args['tau']),float(args['gamma'])))
-            
+            """
             exploration_noise.append(OUNoise(mu = np.zeros(action_dim[i])))
 
 
-        #if args['use_gym_monitor']:
+        # if args['use_gym_monitor']:
         #    if not args['render_env']:
         #        envMonitor = wrappers.Monitor(env, args['monitor_dir'], video_callable=False, force=True)
         #    else:
         #        envMonitor = wrappers.Monitor(env, args['monitor_dir'], force=True)
 
+        # n brains
+        if False:
+            for i in range(n):
+                observation_dim.append(env.observation_space[i].shape[0])
+                action_dim.append(env.action_space[i].n)
+                brains.apppen(Brain(sess, observation_dim[i], action_dim[i], float(args['actor_lr']), float(args['tau']), \
+                                   observation_dim[i], total_action_dim, float(args['critic_lr']), float(args['tau']),float(args['gamma'])))
+                exploration_noise.append(OUNoise(mu = np.zeros(action_dim[i]))) 
+
+            # learn()
 
         if args["runTest"]:
 
@@ -215,9 +230,9 @@ if __name__ == '__main__':
     parser.add_argument('--render-env', help='render the gym env', action='store_true')
     parser.add_argument('--use-gym-monitor', help='record gym results', action='store_true')
     parser.add_argument('--monitor-dir', help='directory for storing gym results', default='./results/videos/video1')
-    parser.add_argument('--summary-dir', help='directory for storing tensorboard info', default='./results/3vs1_simple/tfdata/')
-    parser.add_argument('--modelFolder', help='the folder which saved model data', default="./results/3vs1_simple/weights/")
-    parser.add_argument('--runTest', help='use saved model to run', default=True)
+    parser.add_argument('--summary-dir', help='directory for storing tensorboard info', default='./results/3vs1/tfdata/')
+    parser.add_argument('--modelFolder', help='the folder which saved model data', default="./results/3vs1/weights/")
+    parser.add_argument('--runTest', help='use saved model to run', default=False)
 
     parser.set_defaults(render_env=False)
     parser.set_defaults(use_gym_monitor=False)

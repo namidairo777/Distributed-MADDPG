@@ -92,31 +92,38 @@ a set of observations $O_1$, $O_2$ ... $O_n$ for each agent.
 For agent $i$, given $\pi_i$ which could output a action Ai when getting observation Oi. which could be displayed as 
 \[ A_i = \pi_i (O_i) \]
 The Enviroment get $A_1$, $A_2$ ... $A_n$ from each agent, 
-then state S tranfer to next state, and agent recieves Ri from enviroment,
-\[ S, R = Env (A) \]
+then state S tranfers to next state, and agent recieves reward $R_i$ from enviroment,
+\[ next state S, (R_1, R_2 ... R_i) = Env (A) \]
+Each agent is trying to maxmize its total expected reward, which could be represents as,
+\[ \sum (\gamma^t r_i^t) \]
+where t is the time step, gamma is the discounted factor $\gamma$ equals (0, 1)
+
 \subsection{Deep Q-learning}
-Deep Q-learning (DQN) [reference] is the method proposed by DeepMind. It has a much better performance compared with original RL methods. Especially in discrete action space, DQN reached nearly human level in Atari games.
+Deep Q-learning (DQN) [reference: Mnih et al. 2015] is the method proposed by DeepMind. It has a much better performance compared with original RL methods. Especially in discrete action space, DQN reached nearly human level in Atari games.
 \begin{equation}
 L(\theta) = E_{s,a,r,s'}[(Q^*(s, a|\theta) - y)^2],  
 \end{equation}
 $$where\ y = r + \gamma\max \bar{Q}^*(s', a')$$
-However, due to the connection between continous actions, DQN failed to converge and performed poorly in such domains.
+The TD-loss could be presented as blow, using current value function and the difference among batch data. Then it uses Stocastic Gradient Desecent to minimize the loss, resulting in convergence of value function. Also, the target network and replay memory helps to fix the non-stationary problem of learning. \par
+However, DQN can only handle discrete and low-dimentional action spaces. It cannot be directly applied to continuous domains because it relies on find actions which could maxmize the value function. Value-iteration to find the optimal action at every time step is almostly impossible in continous action spaces. In multi-agent predator-prey environment, it is not the direction the agent dicides to go, but the power in each direction and considering the acceleration, frictional force， which resulting in a natural moving.
+
 \subsection{Deep Deterministic Policy Gradient}
-Deep Deterministic Policy Gradient (DDPG) [reference] is based on Deterministic Policy Gradient [reference] and original Policy Gradient [reference] method. 
+DQN made great success in high-dimensional observation spaces and discrete action space, but failed in continous action spaces. Deep Deterministic Policy Gradient (DDPG) [reference] is based on Deterministic Policy Gradient [reference] and could solve high-dimensional continuous action spaces tasks. DDPG is an actor-critic method, actor represents agent's policy $\pi$ and critic is to evaluate the action which policy would take using Value function like DQN. 
+\begin{equation}
+L(\theta) = E_{s,a,r,s'}[(Q^*(s, a|\theta) - y)^2] 
+J(\mu) = E[Q^\mu(s, a) | _{a=\mu(s)}]
+\end{equation}
+During training time, actor trys to maxmize $J(\mu)$ using Stocastic Gradient Acsent and critic trys to minimize TD-loss using SGD. DDPG also applied target network and replay memory used in DQN. \par
+However, policy of each agent is changing during training proccess, and the environment becomes non-stationary due to the fact agent could not predict next state with its own policy. This issue would prevent training stability and the use of experience replay memory. DDPG could not solve multi-agent setting problems.
 
-\begin{figure}[h]
- \begin{center}
-  \includegraphics[width=8cm]{imgs/ddpg.PNG}
-  \label{fig:ddpg}
- \end{center}
-\end{figure}
-
-DDPG can solve continonous action space problem which DQN cannot tackle. It suses actor-critic architecture to handle the problem that original PG cannot update per step.
-\subsection{Asynchronous Advantage Actor Critic (A3C)}
+\subsection{Advantage Actor-Critic}
 A synchronous variant of A3C - Advantage Actor Critic performs better than A3C.
 The simplest way to multi-agent coorperation learning is to do leanring independently for each agent. This first attemp is Q-learning which is a classical algorithm in Reinforcement learning, but it does not perform well []. Contrary to value-based method, policy gradient methods for independently learning also performs poorly. This is because each agent's policy changes during the training time then it turns out to a non-stationary environment. \par
 
 !Recent work has focused on learning grounded cooperative communication protocols between agents to solve various tasks [29, 8, 24]. However, these methods are usually only applicable when the communication between agents is carried out over a dedicated, differentiable communication channel.! \par
+
+\subsection{Multi-Agent DDPG}
+This is the method which 
 
 Our method is ....
 
@@ -171,6 +178,29 @@ When we are calculating Advantage which could be also called TD-error, by clippi
 \Return {$new graph$}
 \end{algorithmic}
 \end{algorithm*}
+
+\section{Empiral Experiments}
+\subsection{Experiment Environment}
+
+
+
+\subsection{Network Architecure}
+\begin{figure}[h]
+ \begin{center}
+  \includegraphics[width=8cm]{imgs/actor.PNG}
+  \caption{Actor Network Architecture}\label{fig:Actor}
+ \end{center}
+\end{figure}
+
+
+
+\begin{figure}[h]
+ \begin{center}
+  \includegraphics[width=8cm]{imgs/critic.PNG}
+  \caption{Critic Network Architecture}\label{fig:Critic}
+ \end{center}
+\end{figure}
+
 
 \section{序論}
 執筆要領について述べる。

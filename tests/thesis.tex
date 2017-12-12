@@ -7,6 +7,8 @@
 \usepackage{algorithm, algpseudocode}
 \usepackage{algorithmicx}
 \usepackage{comment}
+\usepackage{biblatex}
+\addbibresource{references.bib} 
 
 \graphicspath{ {imgs/} }
 
@@ -35,7 +37,7 @@ Supervised by: & Nobuhara Hajime, Yasushi Nakauchi and Junichi Hoshino (Division
 \dateheader{2018年3月}
 
 \abstract{
-This paper explains the iit format of master thesis. Standardly, minimum of 8 pages and maximum 24 pages are recommended. If the body text is written in English, English title and English affiliation should come first, then the Japanese. The abstract should be provided in English no matter what language is used in the body text. The data and reference may be included in extra appendix if they can not be included in the body text.. This paper explains the iit format of master thesis. Standardly, minimum of 8 pages and maximum 24 pages are recommended. If the body text is written in English, English title and English affiliation should come first, then the Japanese. The abstract should be provided in English no matter what language is used in the body text. The data and reference may be included in extra appendix if they can not be included in the body text.. This paper explains the iit format of master thesis. Standardly, minimum of 8 pages and maximum 24 pages are recommended. If the body text is written in English, English title and English affiliation should come first, then the Japanese. The abstract should be provided in English no matter what language is used in the body text. The data and reference may be included in extra appendix if they can not be included in the body text.
+Research of Moving Target Search is ongoing recent years. There are some researches according to the problem of Multi-Agent pursuing a moving target, but few of them could be applied to real world. This research focused on this problem and proposed a speed-up method for real-time grid environment based on Cover Heuristic method. We use Map Abstraction to build map hierarchy which helps us do faster map search compared to previous method. Refinement is used for highly-abstracted route refining to successor original map. Finally, evaluation experiments are based on Benchmark maps and the result showed high efficiency of our proposed method.
 }
 
 \keywords{keyword-1, keyword-2, keyword-3, keyword-4, keyword-5, keyword-6}
@@ -46,10 +48,10 @@ This paper explains the iit format of master thesis. Standardly, minimum of 8 pa
 \thispagestyle{iitheader}
 \section{Introduction}
 [AI Boom] \par
-Recently, AI arouse hot topics around the world, especially the appearence of AlphaGo [reference]. DeepMind introduced their Go player which is called AlphaGo in 2015, they beat several human being's top professional players of over the past two years. And AlphaGo evolved to higher version? which are AlphaGo Master [reference] and AlphaGo Zero [reference]. Not only the application to traditional sports, Game is also a big area which study are ongoing. DeepMind and Blizzard released StarCraft II as an AI research environment [reference] to researchers around the world which could help human-being to have a better acknowledge of game strategy.\par
+Recently, AI arouse hot topics around the world, especially the appearence of AlphaGo \cite{1}. DeepMind introduced their Go player which is called AlphaGo in 2015, they beat several human being's top professional players of over the past two years. And AlphaGo evolved to higher version? which are AlphaGo Master and AlphaGo Zero \cite{2}. Not only the application to traditional sports, Game is also a big area which study are ongoing. DeepMind and Blizzard released StarCraft II as an AI research environment [reference] to researchers around the world which could help human-being to have a better acknowledge of game strategy.\par
 
 [Application and shortcomings] \par
-Deep Reinforcement Learning (DRL) is one of the technologies which support AI development. There are a lot of applications from game playing [reference] to robot controlling [reference]. Also, Google applied Deep Learning to data center coolinng by 40\% electric cost off [reference]. Healthcare and finance are the areas which are being researched and expected to have a greate impact to sociaty. However, despite the fact that DRL is successfully applied to many single-agent domain tasks, there are varianty of applications which are in multi-agent domain. These application needs multiple agents to evolve together resulting in good communication or cooperation. For instance, multi-character controlling in game playing, multi-agent system in delivery system and so on.
+Deep Reinforcement Learning (DRL) is one of the technologies which support AI development. There are a lot of applications from game playing [reference] to robot controlling [reference]. Also, Google applied Deep Learning to data center coolinng by 40\% \cite{3} electric cost off [reference]. Healthcare and finance are the areas which are being researched and expected to have a greate impact to sociaty. However, despite the fact that DRL is successfully applied to many single-agent domain tasks, there are varianty of applications which are in multi-agent domain. These application needs multiple agents to evolve together resulting in good communication or cooperation. For instance, multi-character controlling in game playing, multi-agent system in delivery system and so on.
 
 [Task]
 \begin{figure}[t]
@@ -59,18 +61,18 @@ Deep Reinforcement Learning (DRL) is one of the technologies which support AI de
  \end{center}
 \end{figure}
 
-One representative for multi-agent task is Predator-Prey [reference], showed in figure [fig:adversaryChasing]. In above case, there are 
-3 predators, 1 prey and 2 landmarks (obstacles) in this map. Predators move with slower speed compared to prey to chase the faster moving prey. For human being, the cooperation strategy of splitting up and surrounding is absolutely easy to understand and learn. Unfortunately, it is difficult for agent to learn. Although Traditional reinforcement learning such as Q-learning [reference], Policy Gradient performs greatly or even over human being in Atari Game [reference], it performs poorly in multi-agent domain. The reason why the successful RL methods using in single-agent domains could not acquire the same result in multi-agent domain is that along with mult-agent self-learning, the environment becomes non-stationary which failed in convergence. \par
+One representative for multi-agent task is Predator-Prey \cite{4}, showed in figure [fig:adversaryChasing]. In above case, there are 
+3 predators, 1 prey and 2 landmarks (obstacles) in this map. Predators move with slower speed compared to prey to chase the faster moving prey. For human being, the cooperation strategy of splitting up and surrounding is absolutely easy to understand and learn. Unfortunately, it is difficult for agent to learn. Although Traditional reinforcement learning such as Q-learning \cite{5}, Policy Gradient \cite{6} performs greatly or even over human being in Atari Game \cite{7}, it performs poorly in multi-agent domain. The reason why the successful RL methods using in single-agent domains could not acquire the same result in multi-agent domain is that along with mult-agent self-learning, the environment becomes non-stationary which failed in convergence. \par
 
 [Agenda] \par
-In this work, we first introduce several prior work and related researches and why they failed in multi-agent domain. Then we will explain our proposed method - Distributed Multi-Agent Cooperation Algorithm besed on MADDPG algorithm [reference]. Our method includes the multiple workers distributly working on each thread and the learning rate tuning using Proximal Policy Optimization [reference]. \par
+In this work, we first introduce several prior work and related researches and why they failed in multi-agent domain. Then we will explain our proposed method - Distributed Multi-Agent Cooperation Algorithm besed on MADDPG algorithm \cite{4}. Our method includes the multiple workers distributly working on each thread and the learning rate tuning using Proximal Policy Optimization \cite{8}. \par
 
 Evaluation experiments shows our method performed better than MADDPG and traditional Deep Reinforcement Learning method DDPG. \par
 
 \section{Related Work} 
 In this section, we introduce several related researches and discuss why they cannot be applied to multi-agent domain task.
 \subsection{Cover-hueristic Algorithm}
-As for prior research for solving Predator-Prey, I have proposed a cooperation searching algorithm towards this task. This method is based on map search using cover-heuristic (maxmizing Predator's moving area and minimizing prey's moving area) and accelarate search by map abstraction and refinement. However, this method performs well in small-size maps but poorly in big-size maps, the computational time is depends on the map size. A agent which could be called intelligent should have its own mind like human beings. This kind of AI is able to take actions based one its own policy.\par
+As for prior research for solving Predator-Prey, I have proposed a cooperation searching algorithm  \cite{9} towards this task. This method is based on map search using cover-heuristic (maxmizing Predator's moving area and minimizing prey's moving area) and accelarate search by map abstraction and refinement. However, this method performs well in small-size maps but poorly in big-size maps, the computational time is depends on the map size. A agent which could be called intelligent should have its own mind like human beings. This kind of AI is able to take actions based one its own policy.\par
 
 
 \subsection{Multi-Agent Markov Environment}
@@ -100,7 +102,7 @@ Each agent is trying to maxmize its total expected reward, which could be repres
 where t is the time step, gamma is the discounted factor $\gamma$ equals (0, 1)
 
 \subsection{Deep Q-learning}
-Deep Q-learning (DQN) [reference: Mnih et al. 2015] is the method proposed by DeepMind. It has a much better performance compared with original RL methods. Especially in discrete action space, DQN reached nearly human level in Atari games.
+Deep Q-learning (DQN) \cite{10} is the method proposed by DeepMind. It has a much better performance compared with original RL methods. Especially in discrete action space, DQN reached nearly human level in Atari games.
 \begin{equation}
 L(\theta) = E_{s,a,r,s'}[(Q^*(s, a|\theta) - y)^2],  
 \end{equation}
@@ -109,7 +111,7 @@ The TD-loss could be presented as blow, using current value function and the dif
 However, DQN can only handle discrete and low-dimentional action spaces. It cannot be directly applied to continuous domains because it relies on find actions which could maxmize the value function. Value-iteration to find the optimal action at every time step is almostly impossible in continous action spaces. In multi-agent predator-prey environment, it is not the direction the agent dicides to go, but the power in each direction and considering the acceleration, frictional force， which resulting in a natural moving.
 
 \subsection{Deep Deterministic Policy Gradient}
-DQN made great success in high-dimensional observation spaces and discrete action space, but failed in continous action spaces. Deep Deterministic Policy Gradient (DDPG) [reference] is based on Deterministic Policy Gradient [reference] and could solve high-dimensional continuous action spaces tasks. DDPG is an actor-critic method, actor represents agent's policy $\pi$ and critic is to evaluate the action which policy would take using Value function like DQN. 
+DQN made great success in high-dimensional observation spaces and discrete action space, but failed in continous action spaces. Deep Deterministic Policy Gradient (DDPG) \cite{6} is based on Deterministic Policy Gradient \cite{11} and could solve high-dimensional continuous action spaces tasks. DDPG is an actor-critic method, actor represents agent's policy $\pi$ and critic is to evaluate the action which policy would take using Value function like DQN. 
 \begin{equation}
 L(\theta) = E_{s,a,r,s'}[(Q^*(s, a|\theta) - y)^2] 
 \end{equation}
@@ -121,14 +123,14 @@ However, policy of each agent is changing during training proccess, and the envi
 
 \subsection{Advantage Actor-Critic}
 Different from DQN or DDPGs, another method using Actor-critic architecture uses advantage for learning. 
-There are Asychronous [reference] and Sychronous [reference] version of Advantage method. 
+There are Asychronous \cite{12} and Sychronous \cite{13} version of Advantage method. 
 \begin{equation}
 A(s_t, a_t; \theta, \theta_v) = \sum_{i=0}^{k-1}(\gamma^i r_{t+i} + \gamma^k V(s_{t+k};\theta_v)) - V(s_t; \theta_v).
 \end{equation}
 One point which A2C or A3C outperforms over traditional methods is Multi-Worker idea. Actor-Critic learner runs on each separate thread and updates experience or gradient to global actor-critic. Global actor-critic gets data from workers sync or async, and tries to learn optimal policy. This multi-worker idea will be adopted in our method.
 
 \subsection{Multi-Agent DDPG}
-Recently, OpenAI rleased a method which extends traditional DDPG method to multi-agent domain. As we know, single-agent algorithm failed because while agent is updating policy, the environment becomes non-stationary which turns out to failure of convergence. Multi-Agent DDPG found a centralized way to put other agents's actions into consideration in critic.
+Recently, OpenAI rleased a method which extends traditional DDPG method to multi-agent domain \cite{4}. As we know, single-agent algorithm failed because while agent is updating policy, the environment becomes non-stationary which turns out to failure of convergence. Multi-Agent DDPG found a centralized way to put other agents's actions into consideration in critic.
 \begin{equation}
 L(\theta_i) = E_{s,a,r,s'}[(Q^*(s, a_1, a_2 ... a_n) - y)^2],  
 \end{equation}
@@ -350,4 +352,21 @@ A4用紙を縦長に使用する。本文は8ページ（表裏で4枚）以上�
 \end{itemize}
 
 \end{comment}
+
+\begin{thebibliography}{9}
+\bibitem{1}  工学修得, ''修士論文の書き方'', 知能機能システム学会論文誌, Vol.1, No.2, pp.34--56, 2015.
+\bibitem{2} "https://arxiv.org/abs/1712.01815"
+\bibitem{3} "https://deepmind.com/blog/deepmind-ai-reduces-google-data-centre-cooling-bill-40/"
+\bibitem{4} "https://arxiv.org/abs/1706.02275"
+\bibitem{5} "https://link.springer.com/article/10.1007/BF00992698"
+\bibitem{6} "https://scholar.google.com/scholar?hl=zh-CN&as_sdt=02C5&q=policy+gradient&btnG="
+\bibitem{7} "https://arxiv.org/abs/1509.02971"
+\bibitem{8} "https://arxiv.org/abs/1707.06347"
+\bibitem{9} "リアルタイムグリッド環境における単一移動目標捕獲マルチエージェントの性能向上"
+\bibitem{10} "https://www.nature.com/articles/nature14236"
+\bibitem{11} "http://proceedings.mlr.press/v32/silver14.pdf"
+\bibitem{12} "http://proceedings.mlr.press/v48/mniha16.pdf"
+\bibitem{13} " https://blog.openai.com/baselines-acktr-a2c/"
+\end{thebibliography}
+
 \end{document}

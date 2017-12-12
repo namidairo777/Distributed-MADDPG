@@ -58,7 +58,7 @@ def main(args):
         total_action_dim = 0
 
         # Aversary Agents action spaces
-        for i in range(env.n):
+        for i in range(ave_n):
             total_action_dim = total_action_dim + env.action_space[i].n
 
         print("total_action_dim", total_action_dim)
@@ -68,16 +68,16 @@ def main(args):
             observation_dim.append(env.observation_space[i].shape[0])
             action_dim.append(env.action_space[i].n) # assuming discrete action space here -> otherwise change to something like env.action_space[i].shape[0]
             actors.append(ActorNetwork(sess,observation_dim[i],action_dim[i],float(args['actor_lr']),float(args['tau'])))
-            critics.append(CriticNetwork(sess,n,observation_dim[i],total_action_dim,float(args['critic_lr']),float(args['tau']),float(args['gamma'])))
+            # critics.append(CriticNetwork(sess,n,observation_dim[i],total_action_dim,float(args['critic_lr']),float(args['tau']),float(args['gamma'])))
             
-            """
+            
             if i < ave_n:
                 #MADDPG - centralized Critic
                 critics.append(CriticNetwork(sess,n,observation_dim[i],total_action_dim,float(args['critic_lr']),float(args['tau']),float(args['gamma'])))
             else:
                 # DDPG
                 critics.append(CriticNetwork(sess,n,observation_dim[i],action_dim[i],float(args['critic_lr']),float(args['tau']),float(args['gamma'])))
-            """
+            
             exploration_noise.append(OUNoise(mu = np.zeros(action_dim[i])))
 
 
@@ -139,11 +139,11 @@ def main(args):
             import time
             # , force=True
             # env = wrappers.Monitor(env, args["monitor_dir"], force=True)
-            for ep in range(200, 5000, 200):
+            for ep in range(10):
                 # load model
                 s = env.reset()
                 for j in range(env.n):
-                    actors[j].mainModel.load_weights(args["modelFolder"]+"ep" + str(ep)+"/" + str(j) +'_weights'+'.h5')
+                    actors[j].mainModel.load_weights(args["modelFolder"]+ str(j) +'_weights'+'.h5')
                 for step in range(300):
                     
                     reward = 0.0
@@ -215,9 +215,9 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='provide arguments for DDPG agent')
 
     # agent parameters
-    parser.add_argument('--actor-lr', help='actor network learning rate', default=0.0001)
-    parser.add_argument('--critic-lr', help='critic network learning rate', default=0.001)
-    parser.add_argument('--gamma', help='discount factor for critic updates', default=0.99)
+    parser.add_argument('--actor-lr', help='actor network learning rate', default=0.01)
+    parser.add_argument('--critic-lr', help='critic network learning rate', default=0.01)
+    parser.add_argument('--gamma', help='discount factor for critic updates', default=0.95)
     parser.add_argument('--tau', help='soft target update parameter', default=0.01)
     parser.add_argument('--buffer-size', help='max size of the replay buffer', default=1000000)
     parser.add_argument('--minibatch-size', help='size of minibatch for minibatch-SGD', default=64)
@@ -230,9 +230,9 @@ if __name__ == '__main__':
     parser.add_argument('--render-env', help='render the gym env', action='store_true')
     parser.add_argument('--use-gym-monitor', help='record gym results', action='store_true')
     parser.add_argument('--monitor-dir', help='directory for storing gym results', default='./results/videos/video1')
-    parser.add_argument('--summary-dir', help='directory for storing tensorboard info', default='./results/3vs1/tfdata/')
-    parser.add_argument('--modelFolder', help='the folder which saved model data', default="./results/3vs1/weights/")
-    parser.add_argument('--runTest', help='use saved model to run', default=False)
+    parser.add_argument('--summary-dir', help='directory for storing tensorboard info', default='./results/3vs1_simple/tfdata/')
+    parser.add_argument('--modelFolder', help='the folder which saved model data', default="./results/3vs1_simple/weights/")
+    parser.add_argument('--runTest', help='use saved model to run', default=True)
 
     parser.set_defaults(render_env=False)
     parser.set_defaults(use_gym_monitor=False)

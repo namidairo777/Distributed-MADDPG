@@ -259,7 +259,7 @@ def saveWeights(actor, i, pathToSave):
 	actor.mainModel.save_weights(pathToSave + str(i) + "_weights.h5")
 
 def showReward(episode_reward, n, ep, start):
-	print ('|Episode: {:4d} | Time: {:2d} | Rewards: {:5.2f} {:5.2f} {:5.2f}'.format(ep, int(time.time() - start), episode_reward[0], episode_reward[1], episode_reward[2]))
+	print ('|Episode: {:4d} | Time: {:2d} | Rewards: {:5.2f} {:5.2f} {:5.2f} {:5.2f}'.format(ep, int(time.time() - start), episode_reward[0], episode_reward[1], episode_reward[2], episode_reward[3]))
 
 def write_log(callback, names, logs, batch_no):
     for name, value in zip(names, logs):

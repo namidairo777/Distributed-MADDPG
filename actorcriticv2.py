@@ -191,7 +191,7 @@ class CriticNetwork(object):
 		# temp1 = Dense(300)(h)
 		#action_abs = Activation('relu')(action_abs)
 		#action_abs = BatchNormalization()(action_abs)
-		h = Add()([h,input_actions])
+		h = Concatenate(axis=-1)([h,input_actions])
 		h = Dense(300)(h)
 		h = Activation('relu')(h)
 		#h = BatchNormalization()(h)

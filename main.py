@@ -114,7 +114,7 @@ def main(args):
                 reward = 0.0
                 for step in range(200):
                     
-                    time.sleep(0.03)
+                    time.sleep(0.01)
                     env.render()
                     actions = []
                     for i in range(env.n):

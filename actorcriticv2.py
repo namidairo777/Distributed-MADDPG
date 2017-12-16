@@ -24,12 +24,16 @@ class ActorNetwork(object):
 		self.lr =  lr
 		self.tau = tau
 		self.mainModel,self.mainModel_weights,self.mainModel_state = self._build_hard2_model()
+		self.mainModel._make_predict_function()
 		self.targetModel,self.targetModel_weights,_ = self._build_hard2_model()
+		self.targetModel._make_predict_function()
 		self.action_gradient = tf.placeholder(tf.float32,[None,self.action_dim])
 		self.params_grad = tf.gradients(self.mainModel.output, self.mainModel_weights, self.action_gradient)
 		grads = zip(self.params_grad,self.mainModel_weights)
 		self.optimize = tf.train.AdamOptimizer(-self.lr).apply_gradients(grads)
 		self.sess.run(tf.global_variables_initializer())
+		# self.default_graph = tf.get_default_graph()
+		# self.default_graph.finalize()
 	
 	# Network architecture
 	def _build_model(self):
@@ -137,9 +141,14 @@ class CriticNetwork(object):
 		self.num_agents = num_agents
 		self.gamma  =  gamma
 		self.mainModel,self.state,self.actions = self._build_hard2_model()
+		self.mainModel._make_predict_function()
+		self.mainModel._make_train_function()
 		self.targetModel,_,_ = self._build_hard2_model()
+		self.targetModel._make_predict_function()
 		self.action_grads  = tf.gradients(self.mainModel.output,self.actions)
 		self.sess.run(tf.global_variables_initializer())
+		# self.default_graph = tf.get_default_graph()
+		# self.default_graph.finalize()
 
 	# Network architecture
 	def _build_model(self):

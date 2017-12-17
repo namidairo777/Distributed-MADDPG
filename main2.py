@@ -422,7 +422,7 @@ def main(args):
 
             for i in range(n):
                 # load model
-                actors[i].mainModel.load_weights(args["modelFolder"]+ "ep200000/" +str(i)+'_weights'+'.h5')
+                actors[i].mainModel.load_weights(args["modelFolder"]+str(i)+'_weights'+'.h5')
                 # episode 4754
             import time
             #   time.sleep(3)
@@ -552,7 +552,7 @@ if __name__ == '__main__':
     parser.add_argument('--use-gym-monitor', help='record gym results', action='store_true')
     parser.add_argument('--monitor-dir', help='directory for storing gym results', default='./results/videos/video1')
     parser.add_argument('--summary-dir', help='directory for storing tensorboard info', default='./results/2vs1_distributed/tfdata/')
-    parser.add_argument('--modelFolder', help='the folder which saved model data', default="./results/2vs1_distributed/weights/")
+    parser.add_argument('--modelFolder', help='the folder which saved model data', default="./results/good_weights/actor")
     parser.add_argument('--runTest', help='use saved model to run', default=True)
 
     parser.set_defaults(render_env=False)

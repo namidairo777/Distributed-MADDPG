@@ -8,6 +8,7 @@
 \usepackage{algorithmicx}
 \usepackage{comment}
 \usepackage{biblatex}
+\usepackage{amsfonts}
 \addbibresource{references.bib} 
 
 \graphicspath{ {imgs/} }
@@ -69,48 +70,77 @@ In this work, we first introduce several prior work and related researches and w
 
 Evaluation experiments shows our method performed better than MADDPG and traditional Deep Reinforcement Learning method DDPG. \par
 
-\section{Related Work} 
+\section{Background} 
 In this section, we introduce several related researches and discuss why they cannot be applied to multi-agent domain task.
 \subsection{Cover-hueristic Algorithm}
 As for prior research for solving Predator-Prey, I have proposed a cooperation searching algorithm  \cite{9} towards this task. This method is based on map search using cover-heuristic (maxmizing Predator's moving area and minimizing prey's moving area) and accelarate search by map abstraction and refinement. However, this method performs well in small-size maps but poorly in big-size maps, the computational time is depends on the map size. A agent which could be called intelligent should have its own mind like human beings. This kind of AI is able to take actions based one its own policy.\par
 
 
-\subsection{Multi-Agent Markov Environment}
+\subsection{Reinforcement Learning and Multi-Agent Markov Decision Process}
 
+Reinforcement Learning (RL) is method that agent learns to make decisions through interaction with the environment. An agent interacts with environment and becomes able to alter its behaviour according to the reward it recieved from environment along with observing the consequences of its actions. \par
+
+In RL settings, agent is controlled by specific algorithm (machine learning). At timestep $t$, the agent observes a state $s_t$ from environment and interacts with it by taking an action $a_t$. After agent takes an action, the environment and agent transition to a new state $s_{t+1}$. The state represents sufficient necessary information which could have agent's informations (position, velocity) and other environment information. Each time the environment transitions to a new state, agent recieves an reward $r_t$ as feedback. The goal of the agent is to learn a policy $\pi$ which maximizes the expected cumulative reward. However, the challenge in RL is that agent needs to learn about the consequences of actions by trail and error instead of one step action. The action-learning loop is illustrated in Figure \ref{fig:rl}. \par
 \begin{figure}[h]
  \begin{center}
   \includegraphics[width=8cm]{imgs/RL.PNG}
-  \caption{Reinforcement Learning}
+  \caption{
+  The Agent-Action-Learning loop. At time $t$, the agent recieves state $s_t$ from the environment. The agent uses its policy $\pi$ to choose an action $a_t$. Once the action is executed, the environment transitions a step, providing the next state $s_{t+1}$ as well as feedback in the form of a reward $r_{t+1}$. The agent uses knowledge of state transitions, of the form ($s_t$, $a_t$, $r_{t+1}$, $s_{t+1}$), in order to learn and improve its policy.
+  }
   \label{fig:rl}
  \end{center}
 \end{figure}
 
-The interaction between agent and environment is in [fig], environment gets action from agent and return next state and reward to agent.
-We extend singl-agent domain interaction to multi-agent setting. \par
-A Markvo Environment in multi-agent could be defined: $N$ agents, 
-state $S$ which decribes agents' configuration, 
-a set of actions $A_1$, $A_2$ ... $A_n$,
-a set of observations $O_1$, $O_2$ ... $O_n$ for each agent.
-\[ Observation = Env (Agent) \]
-For agent $i$, given $\pi_i$ which could output a action Ai when getting observation Oi. which could be displayed as 
-\[ A_i = \pi_i (O_i) \]
-The Enviroment get $A_1$, $A_2$ ... $A_n$ from each agent, 
-then state S tranfers to next state, and agent recieves reward $R_i$ from enviroment,
-\[ next state S, (R_1, R_2 ... R_i) = Env (A) \]
+The RL could be described as a Markov Decision Process (MDP). in our work, we extend MDP from single agent domain to multi-agent setting. The multi-agent MDP consists of (timestep $t$ is omitted):
+\begin{itemize}
+  \item $n$ Agents.
+  \item State $s$ which describes agents' configuration.
+  \item A set of observations $o_1$, $o_2$ ... $o_i$ ... $o_n$ from state, $_i$ is agent's index.
+  \item A set of actions $a_1$, $a_2$ ... $a_i$ ... $a_n$ chosen from each agent.
+  \item Policy $\pi_i$ of agent $i$: \[\pi_i: o_i \rightarrow a_i\] which represents given the observation, agent uses its policy to choose an action.
+  \item A set of rewards $r_1$, $r_2$ ... $r_i$ ... $r_n$, agents recieves rewards from environment after execution of their chosen actions.
+\end{itemize}
 Each agent is trying to maxmize its total expected reward, which could be represents as,
-\[ \sum (\gamma^t r_i^t) \]
-where t is the time step, gamma is the discounted factor $\gamma$ equals (0, 1)
+\[ \sum_{t=0}^{T-1}(\gamma^t r_i^{t+1}) \]
+where $t$ is timestep and $T$ is the length of one episode, gamma is the discounted factor $\gamma$ $\subseteq$ $(0, 1]$
 
-\subsection{Deep Q-learning}
-Deep Q-learning (DQN) \cite{10} is the method proposed by DeepMind. It has a much better performance compared with original RL methods. Especially in discrete action space, DQN reached nearly human level in Atari games.
+\section{Related Work}
+
+Currently, there are three approaches to solve MDP problems: value-based method, policy-based method and actor-critic method which combines value and policy method. We will discuss these methods about their advantages and also shortcomings in solve multi-agent domain problems.
+
+\subsection{Value-based Method}
+
+Value-based method is based on estimating the expected return of being given a state. The state-value function $V^\pi(s) = \mathbb{E}[R|s, \pi]$ is expected return when starts from state $s$ and following the policy $\pi$. When we have optimal policy, $\pi$ becomes $\pi^*$. \par
+However, value function can not provide us transitions for agent to learn. Therefore, action-value function $Q^\pi(s, a)$ could help. Action-value function needs initial action $a$ input and state $s$, the following state is based on policy $\pi$. The best policy could be found by choosing maximal $Q$ value with action a which represents as $argmax_a Q^\pi(s, a)$. 
+
+\subsubsection{Q-learning}
+
+Q-learning is one of famous algorithms in RL. We update action-value function using a Bellman equation where t is timestep: 
+\begin{equation}
+Q^\pi(s_t, a_t) = \mathbb{E}_{s+1}[r_{t+1} + \gamma Q^\pi(s_{t+1}, \pi(s_{t+1}))].  
+\end{equation}
+\begin{equation}
+Q^\pi(s_t, a_t) \leftarrow Q^\pi(s_t, a_t) + \alpha\delta.  
+\end{equation}
+where $\alpha$ is learning rate and $\delta = y - Q^\pi(s_t, a_t)$ is the Temporal Difference (TD) error; We can see that $Q^\pi$ can be improved by \textsl{bootstrapping}.\par 
+Q-learning is an off-policy algorithm, because $Q^\pi$ is updated by transitions that were not generated by derived policy where $y = r_t + \gamma\max_a Q^\pi(s_{t+1}, a)$which is the approximation of $Q^*$.
+\subsubsection{Deep Q-learning}
+
+Deep Q-learning (DQN) \cite{10} is the extended version of Q-learning using deep learning. It uses a deep neural network to work as the Q value function. 
+It has a much better performance compared with original RL methods. Especially in discrete action space, DQN reached nearly human level in Atari games.
 \begin{equation}
 L(\theta) = E_{s,a,r,s'}[(Q^*(s, a|\theta) - y)^2],  
 \end{equation}
 $$where\ y = r + \gamma\max \bar{Q}^*(s', a')$$
+where $\theta$ is the parameters in neural network, $(s,a,r,s')$ is the transition we used. \par
 The TD-loss could be presented as blow, using current value function and the difference among batch data. Then it uses Stocastic Gradient Desecent to minimize the loss, resulting in convergence of value function. Also, the target network and replay memory helps to fix the non-stationary problem of learning. \par
 However, DQN can only handle discrete and low-dimentional action spaces. It cannot be directly applied to continuous domains because it relies on find actions which could maxmize the value function. Value-iteration to find the optimal action at every time step is almostly impossible in continous action spaces. In multi-agent predator-prey environment, it is not the direction the agent dicides to go, but the power in each direction and considering the acceleration, frictional force， which resulting in a natural moving.
 
-\subsection{Deep Deterministic Policy Gradient}
+\subsection{Policy-based Method}
+
+\subsection{Actor-Critic Method}
+
+\subsection*{Deep Deterministic Policy Gradient}
 DQN made great success in high-dimensional observation spaces and discrete action space, but failed in continous action spaces. Deep Deterministic Policy Gradient (DDPG) \cite{6} is based on Deterministic Policy Gradient \cite{11} and could solve high-dimensional continuous action spaces tasks. DDPG is an actor-critic method, actor represents agent's policy $\pi$ and critic is to evaluate the action which policy would take using Value function like DQN. 
 \begin{equation}
 L(\theta) = E_{s,a,r,s'}[(Q^*(s, a|\theta) - y)^2] 
@@ -121,15 +151,25 @@ J(\mu) = E[Q^\mu(s, a) | _{a=\mu(s)}]
 During training time, actor trys to maxmize $J(\mu)$ using Stocastic Gradient Acsent and critic trys to minimize TD-loss using SGD. DDPG also applied target network and replay memory used in DQN. \par
 However, policy of each agent is changing during training proccess, and the environment becomes non-stationary due to the fact agent could not predict next state with its own policy. This issue would prevent training stability and the use of experience replay memory. DDPG could not solve multi-agent setting problems.
 
-\subsection{Advantage Actor-Critic}
+\subsection*{Advantage Actor-Critic}
 Different from DQN or DDPGs, another method using Actor-critic architecture uses advantage for learning. 
-There are Asychronous \cite{12} and Sychronous \cite{13} version of Advantage method. 
+There are Asychronous \cite{12} and Sychronous \cite{13} version of Advantage method.\par
+$A(s_t, a_t; \theta, \theta_v) = $ 
 \begin{equation}
-A(s_t, a_t; \theta, \theta_v) = \sum_{i=0}^{k-1}(\gamma^i r_{t+i} + \gamma^k V(s_{t+k};\theta_v)) - V(s_t; \theta_v).
+\sum_{i=0}^{k-1}(\gamma^i r_{t+i} + \gamma^k V(s_{t+k};\theta_v)) - V(s_t; \theta_v).
 \end{equation}
 One point which A2C or A3C outperforms over traditional methods is Multi-Worker idea. Actor-Critic learner runs on each separate thread and updates experience or gradient to global actor-critic. Global actor-critic gets data from workers sync or async, and tries to learn optimal policy. This multi-worker idea will be adopted in our method.
 
-\subsection{Multi-Agent DDPG}
+[Please stop here]
+\section{Proposed Methods}[still need more time on section 3]
+We have discussed in previous sections that traditional reinforcement learning methods perform poorly in our multi-agent domain environment. In this section, we will introduce our proposed method: Distributed Multi-Agent Cooperation Learning. The method could be split into two part. One is the Multi-Worker using threading programming. And another one is the method we use for parameter tuning.
+[Some constrains or obvious advantage of our proposed method]
+
+In traditional DRL methods like DQN or DDPG, we use replay memory to solve the problem that there are close connections between transitions. When training, add transition into repley memory, then when updating network, sample batches from replay memory with a fixed size (64 or 128). However, along with the network updating, old experiences seems less meaningful for learning comparing with batches which were gotten from recent policy. 
+In our Distributed method, we use several (2....n) workers to work for us, in charge of collecting batch data. Each worker runs on different threading with same environment (different random noise for each worker), collection (state, actions, rewards, done, next state) then pushing into a fixed-size memory (64 or 128). When memory is full, our brain starts to update using this batch data. Because we have different work working on parallel world, connection problem between batch data is solved in our method.  
+
+\subsection{Distributed Centralized Critic and decentralized Actor}
+[MADDPG]
 Recently, OpenAI rleased a method which extends traditional DDPG method to multi-agent domain \cite{4}. As we know, single-agent algorithm failed because while agent is updating policy, the environment becomes non-stationary which turns out to failure of convergence. Multi-Agent DDPG found a centralized way to put other agents's actions into consideration in critic.
 \begin{equation}
 L(\theta_i) = E_{s,a,r,s'}[(Q^*(s, a_1, a_2 ... a_n) - y)^2],  
@@ -139,15 +179,6 @@ This is a great iead to learn using centralized critic and act using decentraliz
 [Explain on why env becomes stationary?]
 However, MADDPG adopted the same network from DDPG, due the multiple agent number, the learning becomes slow for heavy computation. In the meantime, it is difficult to choose a good learning rate.
 
-[Please stop here]
-\section{Proposed Methods}[still need more time on section 3]
-We have discussed in previous sections that traditional reinforcement learning methods perform poorly in our multi-agent domain environment. In this section, we will introduce our proposed method: Distributed Multi-Agent Cooperation Learning. The method could be split into two part. One is the Multi-Worker using threading programming. And another one is the method we use for parameter tuning.
-[Some constrains or obvious advantage of our proposed method]
-
-In traditional DRL methods like DQN or DDPG, we use replay memory to solve the problem that there are close connections between transitions. When training, add transition into repley memory, then when updating network, sample batches from replay memory with a fixed size (64 or 128). However, along with the network updating, old experiences seems less meaningful for learning comparing with batches which were gotten from recent policy. 
-In our Distributed method, we use several (2....n) workers to work for us, in charge of collecting batch data. Each worker runs on different threading with same environment (different random noise for each worker), collection (state, actions, rewards, done, next_state) then pushing into a fixed-size memory (64 or 128). When memory is full, our brain starts to update using this batch data. Because we have different work working on parallel world, connection problem between batch data is solved in our method.  
-
-\subsection{Centralized Critic and decentralized Actor}
 As we mentioned in 2.6, we got inspiration from MADDPG which is a multi-agent extension of DDPG. we could extend this centralized thought to critic using advantage (TD-error).
 \begin{equation}
 A(s_t, a_t; \theta, \theta_v) = \sum_{i=0}^{k-1}(\gamma^i r_{t+i} + \gamma^k V(s_{t+k};\theta_v)) - V(s_t; \theta_v).
@@ -162,7 +193,7 @@ Proximal Policy Optimization is the method which gets inspiration from Trust Reg
 \subsection{Distributed Multi-Agent Cooperation Architecture}
 \begin{figure*}[t]
  \begin{center}
-  \includegraphics[width=12cm]{imgs/architecture.eps}
+  \includegraphics[width=12cm]{imgs/architecture.PNG}
   \caption{architecture}
   \label{fig:architecture}
  \end{center}
@@ -345,7 +376,7 @@ A4用紙を縦長に使用する。本文は8ページ（表裏で4枚）以上�
  \item  Submit your thesis to the chair of the iit, after it has passed the examining meeting. The thesis should not be clapped.
  \item The chair of the iit will bind up all the accepted theses and preserve in his/her office.
 \end{itemize}
-
+https://scholar.google.com/scholar?hl=zh-CN&as_sdt=02C5&q=policy+gradient&btnG=
 \end{comment}
 
 \begin{thebibliography}{9}
@@ -354,7 +385,7 @@ A4用紙を縦長に使用する。本文は8ページ（表裏で4枚）以上�
 \bibitem{3} "https://deepmind.com/blog/deepmind-ai-reduces-google-data-centre-cooling-bill-40/"
 \bibitem{4} "https://arxiv.org/abs/1706.02275"
 \bibitem{5} "https://link.springer.com/article/10.1007/BF00992698"
-\bibitem{6} "https://scholar.google.com/scholar?hl=zh-CN&as_sdt=02C5&q=policy+gradient&btnG="
+\bibitem{6} "xxx"
 \bibitem{7} "https://arxiv.org/abs/1509.02971"
 \bibitem{8} "https://arxiv.org/abs/1707.06347"
 \bibitem{9} "リアルタイムグリッド環境における単一移動目標捕獲マルチエージェントの性能向上"

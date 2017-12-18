@@ -2,12 +2,12 @@ import tensorflow as tf
 from gym import wrappers
 import make_env
 import numpy as np
-#import random
-#from ReplayMemory import ReplayMemory
+import random
+from ReplayMemory import ReplayMemory
 from ExplorationNoise import OrnsteinUhlenbeckActionNoise as OUNoise
 from actorcriticv2 import ActorNetwork,CriticNetwork
 #from actorcriticv1 import Brain, Worker
-# from Train import train
+from Train import train
 # from Distributed_Train import *
 import argparse
 from keras.models import load_model
@@ -482,7 +482,7 @@ def main(args):
                 print("Episode: {:d}  | Reward: {:f}".format(ep, reward))
             
         else:
-            if False: 
+            if True: 
                 train(sess,env,args,actors,critics,exploration_noise, ave_n)
             else:
                 global graph, global_queue, update_event, rolling_event, global_step_max, global_step, coord, brain
@@ -551,8 +551,8 @@ if __name__ == '__main__':
     parser.add_argument('--render-env', help='render the gym env', action='store_true')
     parser.add_argument('--use-gym-monitor', help='record gym results', action='store_true')
     parser.add_argument('--monitor-dir', help='directory for storing gym results', default='./results/videos/video1')
-    parser.add_argument('--summary-dir', help='directory for storing tensorboard info', default='./results/2vs1_distributed/tfdata/')
-    parser.add_argument('--modelFolder', help='the folder which saved model data', default="./results/good_weights/actor")
+    parser.add_argument('--summary-dir', help='directory for storing tensorboard info', default='./results/3vs1_hard3/tfdata/')
+    parser.add_argument('--modelFolder', help='the folder which saved model data', default="./results/3vs1_hard3/weights/")
     parser.add_argument('--runTest', help='use saved model to run', default=True)
 
     parser.set_defaults(render_env=False)

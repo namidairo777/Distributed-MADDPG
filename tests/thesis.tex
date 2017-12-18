@@ -168,17 +168,19 @@ We have discussed in previous sections that traditional reinforcement learning m
 In traditional DRL methods like DQN or DDPG, we use replay memory to solve the problem that there are close connections between transitions. When training, add transition into repley memory, then when updating network, sample batches from replay memory with a fixed size (64 or 128). However, along with the network updating, old experiences seems less meaningful for learning comparing with batches which were gotten from recent policy. 
 In our Distributed method, we use several (2....n) workers to work for us, in charge of collecting batch data. Each worker runs on different threading with same environment (different random noise for each worker), collection (state, actions, rewards, done, next state) then pushing into a fixed-size memory (64 or 128). When memory is full, our brain starts to update using this batch data. Because we have different work working on parallel world, connection problem between batch data is solved in our method.  
 
-\subsection{Distributed Centralized Critic and decentralized Actor}
+\subsection{Centralized Critic and decentralized Actor}
 [MADDPG]
-Recently, OpenAI rleased a method which extends traditional DDPG method to multi-agent domain \cite{4}. As we know, single-agent algorithm failed because while agent is updating policy, the environment becomes non-stationary which turns out to failure of convergence. Multi-Agent DDPG found a centralized way to put other agents's actions into consideration in critic.
+Recently, OpenAI rleased a method which extends traditional DDPG method to multi-agent domain \cite{4}. As we know, single-agent algorithm failed because while agent is updating policy, the environment becomes non-stationary which turns out to failure of convergence. \textbf{Multi-Agent DDPG} found a centralized way to put other agents's actions into consideration in critic.
 \begin{equation}
 L(\theta_i) = E_{s,a,r,s'}[(Q^*(s, a_1, a_2 ... a_n) - y)^2],  
 \end{equation}
 $$where\ y = r_i + \gamma{Q_i}^*(s', a_1', a_2' ... a_n') | _{a_j'=\mu_j'(o_j)}$$
 This is a great iead to learn using centralized critic and act using decentralized actor. 
-[Explain on why env becomes stationary?]
-However, MADDPG adopted the same network from DDPG, due the multiple agent number, the learning becomes slow for heavy computation. In the meantime, it is difficult to choose a good learning rate.
 
+Based on the centralized critic idea from MADDPG, we introduce our two approaches towards multi-agent task in Predator-Prey environment.
+
+
+\subsection{Distributed Method based on action-value function as appro}
 As we mentioned in 2.6, we got inspiration from MADDPG which is a multi-agent extension of DDPG. we could extend this centralized thought to critic using advantage (TD-error).
 \begin{equation}
 A(s_t, a_t; \theta, \theta_v) = \sum_{i=0}^{k-1}(\gamma^i r_{t+i} + \gamma^k V(s_{t+k};\theta_v)) - V(s_t; \theta_v).
@@ -202,15 +204,30 @@ Proximal Policy Optimization is the method which gets inspiration from Trust Reg
 There is brain and several workers in our architecture. Fu We use several workers to work in parallel world to collect batch data with low connectivity. In each worker,  we use brain's policy to choose action, then we give this action (using some noise) to environment and get the batch data (state, actions, rewards, done, next state). And we store this data in to a exchange memory which could accessed by workers (working in each thread). When we have stored batch up to a predifined size, workers stop collecting data from each environment. Meantime, our brain starts to update network using batch data.
 
 \begin{algorithm*}
-\caption{Distributed Multi-Agent Cooperation Algorithm}
+\caption{Distributed Worker on each thread Algorithm}
 \begin{algorithmic}
-\State {Initiate brain and n workers}
-\State {}
-\State $New Graph (abstraction level+1)$
-\State $Define a queue$
-\State {$Initiate\ queue\ with\ head\ node\ pointer\ of\ graph$}
+\State {Initialize a random process $\mathbb{N}$ for action exploration}
+\State {Receive initial state $s$}
+\For {$t = 1$ to max-episode-length}
+  \State {for each agent $i$, select action $a_i = \pi_i(o_i) + \mathbb{N}_t$ w.r.t the current policy and exploration}
+  \State {Execute actions $a = (a_1 ... a_n)$ and observe reward $r = (r_1 ... r_n)$ for each agent and new state $s'$}
+  \If {Queue size is not equal to max-batch-size}
+    \State {Store $(s, a, r, s')$ in Queue which could be accessed by other thread}
+  \EndIf
+\EndFor
+\end{algorithmic}
+\end{algorithm*}
+
+\begin{algorithm*}
+\caption{Distributed Multi-Agent Cooperation Algorithm based action-value function}
+\begin{algorithmic}
+\State $Initiate brain and n workers for n agents$
+\State $$
 \For {$episode = 1 to M$}
-  \State {$Do something$}
+  \State {$$}
+  \For {$t = 1$ to max-episode-length}
+    \State {Get batch data $(s, a, r, s')$ from Queue}
+  \EndFor
 \EndFor
 \While {$queue \neq empty$}
     \State $node1 \gets queue.pop()$

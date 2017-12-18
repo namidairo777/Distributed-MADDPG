@@ -140,10 +140,10 @@ class CriticNetwork(object):
 		self.tau = tau
 		self.num_agents = num_agents
 		self.gamma  =  gamma
-		self.mainModel,self.state,self.actions = self._build_hard2_model()
+		self.mainModel,self.state,self.actions = self._build_hard3_model()
 		self.mainModel._make_predict_function()
 		self.mainModel._make_train_function()
-		self.targetModel,_,_ = self._build_hard2_model()
+		self.targetModel,_,_ = self._build_hard3_model()
 		self.targetModel._make_predict_function()
 		self.action_grads  = tf.gradients(self.mainModel.output,self.actions)
 		self.sess.run(tf.global_variables_initializer())
@@ -201,6 +201,28 @@ class CriticNetwork(object):
 		#action_abs = Activation('relu')(action_abs)
 		#action_abs = BatchNormalization()(action_abs)
 		h = Concatenate(axis=-1)([h,input_actions])
+		h = Dense(300)(h)
+		h = Activation('relu')(h)
+		#h = BatchNormalization()(h)
+		pred = Dense(1,kernel_initializer='random_uniform')(h)
+		model = Model(inputs=[input_obs,input_actions],outputs=pred)
+		model.compile(optimizer='Adam',loss='mean_squared_error')
+		return model,input_obs,input_actions
+
+	def _build_hard3_model(self):
+		input_obs = Input(shape=(self.state_dim,))
+		input_actions = Input(shape=(self.action_dim,))
+		temp_obs = Dense(400)(input_obs)
+		obs = Activation('relu')(temp_obs)
+		temp_actions = Dense(400)(input_actions)
+		actions =  Activation('relu')(temp_actions)
+
+		#h = BatchNormalization()(h)
+		# action_abs = Dense(300)(input_actions)
+		# temp1 = Dense(300)(h)
+		#action_abs = Activation('relu')(action_abs)
+		#action_abs = BatchNormalization()(action_abs)
+		h = Add()([obs,actions])
 		h = Dense(300)(h)
 		h = Activation('relu')(h)
 		#h = BatchNormalization()(h)

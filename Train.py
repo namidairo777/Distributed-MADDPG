@@ -131,8 +131,8 @@ def train(sess,env,args,actors,critics,noise, ave_n):
 					grads = critic.action_gradients(s_batch_i,a_for_critic_pred)[:,action_dims_done:action_dims_done + actor.action_dim]
 					actor.train(s_batch_i,grads)
 					#print("Training agent {}".format(i))
-					actor.update_target()
-					critic.update_target()
+					#actor.update_target()
+					#critic.update_target()
 
 				action_dims_done = action_dims_done + actor.action_dim
 
@@ -200,11 +200,15 @@ def train(sess,env,args,actors,critics,noise, ave_n):
 
 					actor.train(s_batch_i, gradients)
 					
-					actor.update_target()
+					# actor.update_target()
 
-					critic.update_target()
+					# critic.update_target()
 			
-
+			for i in range(0, env.n):
+				actor = actors[i]
+				critic = critics[i]
+				actor.update_target()
+				critic.update_target()
 			
 			episode_reward += r
 			#print(done)

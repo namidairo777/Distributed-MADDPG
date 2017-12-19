@@ -2,18 +2,17 @@ import tensorflow as tf
 from gym import wrappers
 import make_env
 import numpy as np
-#import random
-#from ReplayMemory import ReplayMemory
+import random
+from ReplayMemory import ReplayMemory
 from ExplorationNoise import OrnsteinUhlenbeckActionNoise as OUNoise
 from actorcriticv2 import ActorNetwork,CriticNetwork
 #from actorcriticv1 import Brain, Worker
-# from Train import train
+from Train import train
 # from Distributed_Train import *
 import argparse
 from keras.models import load_model
 import os
 import threading, queue, time
-import multiprocessing as mp
 
 
 class Brain(object):
@@ -79,8 +78,8 @@ class Brain(object):
                         s_batch_i = np.asarray([x for x in s_batch[:,i]])
                         grads = critic.action_gradients(s_batch_i,a_for_critic_pred)[:,action_dims_done:action_dims_done + actor.action_dim]
                         actor.train(s_batch_i,grads)
-                        # actor.update_target()
-                        # critic.update_target()
+                        actor.update_target()
+                        critic.update_target()
                     action_dims_done = action_dims_done + actor.action_dim
                 
                 # Only DDPG agent
@@ -109,13 +108,8 @@ class Brain(object):
                         gradients = critic.action_gradients(s_batch_i, action_for_critic_pred)[:, :]
                         actor.train(s_batch_i, gradients)
                         
-                        # actor.update_target()
-                        # critic.update_target()
-                for i in range(self.env_n):
-                    actor = self.actors[i]
-                    critic = self.critics[i]
-                    actor.update_target()
-                    critic.update_target()
+                        actor.update_target()
+                        critic.update_target()
 
                 global_step += 1
 
@@ -260,14 +254,11 @@ def distributed_train(sess, env, args, actors, critics, noise, ave_n):
 
     workers = [Worker(i, env.n, 200, 64, 1234+i, noise) for i in range(worker_num)] 
 
-
     global_queue = queue.Queue()
-
 
     threads = []
 
     for worker in workers:
-        t = mp.Process(target=worker.work, args=())
         t = threading.Thread(target=worker.work, args=())
         threads.append(t)
     threads.append(threading.Thread(target=brain.update, args=()))
@@ -431,7 +422,7 @@ def main(args):
 
             for i in range(n):
                 # load model
-                actors[i].mainModel.load_weights(args["modelFolder"]+ "ep200000/" +str(i)+'_weights'+'.h5')
+                actors[i].mainModel.load_weights(args["modelFolder"]+str(i)+'_weights'+'.h5')
                 # episode 4754
             import time
             #   time.sleep(3)
@@ -491,12 +482,12 @@ def main(args):
                 print("Episode: {:d}  | Reward: {:f}".format(ep, reward))
             
         else:
-            if False: 
+            if True: 
                 train(sess,env,args,actors,critics,exploration_noise, ave_n)
             else:
                 global graph, global_queue, update_event, rolling_event, global_step_max, global_step, coord, brain
                 graph = tf.get_default_graph()
-                global_queue = mp.Queue()
+                global_queue = queue.Queue()
                 update_event, rolling_event = threading.Event(), threading.Event()
                 global_step_max, global_step = 200*1000, 0
                 coord = tf.train.Coordinator()
@@ -545,7 +536,7 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='provide arguments for DDPG agent')
 
     # agent parameters
-    parser.add_argument('--actor-lr', help='actor network learning rate', default=0.001)
+    parser.add_argument('--actor-lr', help='actor network learning rate', default=0.0001)
     parser.add_argument('--critic-lr', help='critic network learning rate', default=0.001)
     parser.add_argument('--gamma', help='discount factor for critic updates', default=0.99)
     parser.add_argument('--tau', help='soft target update parameter', default=0.01)
@@ -560,9 +551,9 @@ if __name__ == '__main__':
     parser.add_argument('--render-env', help='render the gym env', action='store_true')
     parser.add_argument('--use-gym-monitor', help='record gym results', action='store_true')
     parser.add_argument('--monitor-dir', help='directory for storing gym results', default='./results/videos/video1')
-    parser.add_argument('--summary-dir', help='directory for storing tensorboard info', default='./results/2vs1_distributed/tfdata/')
-    parser.add_argument('--modelFolder', help='the folder which saved model data', default="./results/2vs1_distributed/weights/")
-    parser.add_argument('--runTest', help='use saved model to run', default=False)
+    parser.add_argument('--summary-dir', help='directory for storing tensorboard info', default='./results/3vs1_hard/tfdata/')
+    parser.add_argument('--modelFolder', help='the folder which saved model data', default="./results/3vs1_hard/weights/")
+    parser.add_argument('--runTest', help='use saved model to run', default=True)
 
     parser.set_defaults(render_env=False)
     parser.set_defaults(use_gym_monitor=False)
@@ -572,7 +563,7 @@ if __name__ == '__main__':
     #pp.pprint(args)
 
     ## Distributed
-
+    
     main(args)
 
 

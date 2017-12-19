@@ -76,8 +76,8 @@ class Brain(object):
                         s_batch_i = np.asarray([x for x in s_batch[:,i]])
                         grads = critic.action_gradients(s_batch_i,a_for_critic_pred)[:,action_dims_done:action_dims_done + actor.action_dim]
                         actor.train(s_batch_i,grads)
-                        actor.update_target()
-                        critic.update_target()
+                        # actor.update_target()
+                        # critic.update_target()
                     action_dims_done = action_dims_done + actor.action_dim
                 
                 # Only DDPG agent
@@ -106,8 +106,11 @@ class Brain(object):
                         gradients = critic.action_gradients(s_batch_i, action_for_critic_pred)[:, :]
                         actor.train(s_batch_i, gradients)
                         
-                        actor.update_target()
-                        critic.update_target()
+                for i in range(self.env_n):
+                    actor = self.actors[i]
+                    critic = self.critics[i]
+                    actor.update_target()
+                    critic.update_target()
 
                 global_step += 1
 
@@ -149,6 +152,7 @@ class Worker(object):
             episode_reward = np.zeros((self.agent_num,))
             start = time.time()
             # print("env", s[0])
+            buffer_s, buffer_a, buffer_r = [], [], []
             for stp in range(200):
                 if not rolling_event.is_set():
                     rolling_event.wait()
@@ -168,9 +172,12 @@ class Worker(object):
                         
                         actions.append(actor.act(state_input, self.noise[i]()).reshape(actor.action_dim,)) 
                     
-                s2, r, done, _ = self.env.step(actions)
+                    s2, r, done, _ = self.env.step(actions)
 
-                episode_reward += r
+                    episode_reward += r
+
+                    if stp == self.max_episode_len - 1:
+                        Q = self.
 
                 if global_queue.qsize() < self.batch_size:
                     global_queue.put([s, actions, r, done, s2])

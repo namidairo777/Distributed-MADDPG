@@ -261,16 +261,13 @@ def distributed_train(sess, env, args, actors, critics, noise, ave_n):
     workers = [Worker(i, env.n, 200, 64, 1234+i, noise) for i in range(worker_num)] 
 
 
-    global_queue = queue.Queue()
-
-
     threads = []
 
     for worker in workers:
         t = mp.Process(target=worker.work, args=())
-        t = threading.Thread(target=worker.work, args=())
+        #t = threading.Thread(target=worker.work, args=())
         threads.append(t)
-    threads.append(threading.Thread(target=brain.update, args=()))
+    threads.append(mp.Process(target=brain.update, args=()))
     
     for t in threads:
         t.start()
@@ -497,8 +494,8 @@ def main(args):
                 global graph, global_queue, update_event, rolling_event, global_step_max, global_step, coord, brain
                 graph = tf.get_default_graph()
                 global_queue = mp.Queue()
-                update_event, rolling_event = threading.Event(), threading.Event()
-                global_step_max, global_step = 200*1000, 0
+                update_event, rolling_event = mp.Event(), mp.Event()
+                global_step_max, global_step = 200*5000, 0
                 coord = tf.train.Coordinator()
                 brain = Brain(args["modelFolder"])
 

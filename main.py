@@ -1,11 +1,10 @@
-import tensorflow as tf
 from gym import wrappers
 import make_env
 import numpy as np
 #import random
 #from ReplayMemory import ReplayMemory
 from ExplorationNoise import OrnsteinUhlenbeckActionNoise as OUNoise
-from actorcriticv2 import ActorNetwork,CriticNetwork
+from actorcritic_clip import ActorNetwork,CriticNetwork
 #from actorcriticv1 import Brain, Worker
 # from Train import train
 # from Distributed_Train import *
@@ -13,8 +12,8 @@ import argparse
 from keras.models import load_model
 import os
 import threading, queue, time
-import multiprocessing as mp
-
+# from multiprocessing import Process, Event, Queue, Pipe
+import tensorflow as tf
 
 class Brain(object):
     def __init__(self, modelFolder):
@@ -24,7 +23,7 @@ class Brain(object):
         self.env_n = None
         self.modelFolder = modelFolder
 
-    def update(self):
+    def update(self, global_queue, update_event, rolling_event, coord):
         
         global global_step, global_step_max
         while not coord.should_stop():
@@ -149,10 +148,11 @@ class Worker(object):
         self.batch_size = batch_size
         self.noise = noise
 
-    def work(self):
+    def work(self, global_queue, update_event, rolling_event, coord):
         global global_step_max, global_step
         
         while not coord.should_stop():
+            # print("Worker ", self.wid, "Started to work")
             s = self.env.reset()
             episode_reward = np.zeros((self.agent_num,))
             start = time.time()
@@ -160,22 +160,16 @@ class Worker(object):
             for stp in range(200):
                 if not rolling_event.is_set():
                     rolling_event.wait()
-                   
-                # self.env.render()
                 actions = []
-                global graph
-                with graph.as_default():
-                # print("s0:", s[0])
+                if True:
                     for i in range(self.agent_num):
-                        # print("Taking actions")
-                        actor = self.brain.actors[i]    
-
+                        actor = self.brain.actors[i]  
                         # print("wid:", self.wid, " actor!", i)
                         state_input = np.reshape(s[i],(-1,actor.state_dim))
                         # print(state_input)
                         
                         actions.append(actor.act(state_input, self.noise[i]()).reshape(actor.action_dim,)) 
-                    
+
                 s2, r, done, _ = self.env.step(actions)
 
                 episode_reward += r
@@ -200,7 +194,6 @@ class Worker(object):
                     if global_step >= global_step_max:
                         coord.request_stop()
                         break
-
 
 def build_summaries(n):
     losses = [tf.Variable(0.) for i in range(n)]
@@ -241,7 +234,21 @@ def distributed_train(sess, env, args, actors, critics, noise, ave_n):
     # callbacks = []
     # train_names = ['train_loss', 'train_mae']
     # callback = TensorBoard(args['summary_dir'])
-     
+    #global graph, global_queue, update_event, rolling_event, global_step_max, global_step, coord, brain
+    global global_step_max, global_step, brain
+    
+    # graph = tf.get_default_graph()
+    
+    # global_queue = Queue()
+    # update_event, rolling_event = Event(), Event()
+
+    global_queue = queue.Queue()
+    update_event, rolling_event = threading.Event(), threading.Event()
+
+    global_step_max, global_step = 200*5000, 0
+    coord = tf.train.Coordinator()
+    brain = Brain(args["modelFolder"])
+
 
     for actor in actors:
         actor.update_target()
@@ -249,7 +256,7 @@ def distributed_train(sess, env, args, actors, critics, noise, ave_n):
         critic.update_target()
     
     worker_num = 4
-    global update_event, rolling_event
+    # global update_event, rolling_event
     update_event.clear()
     rolling_event.set()
     
@@ -258,23 +265,33 @@ def distributed_train(sess, env, args, actors, critics, noise, ave_n):
     brain.ave_n = ave_n
     brain.env_n = env.n
 
-    workers = [Worker(i, env.n, 200, 64, 1234+i, noise) for i in range(worker_num)] 
+    workers = [Worker(i, env.n, 200, 128, 1234+i*10, noise) for i in range(worker_num)] 
 
 
     threads = []
 
+
+
     for worker in workers:
-        t = mp.Process(target=worker.work, args=())
+        # t = Process(target=worker.work, daemon=True, args=(global_queue, update_event, rolling_event, coord, ))
+        t = threading.Thread(target=worker.work, daemon=True, args=(global_queue, update_event, rolling_event, coord, ))
+        
         #t = threading.Thread(target=worker.work, args=())
         threads.append(t)
-    threads.append(mp.Process(target=brain.update, args=()))
-    
+    # threads.append(Process(target=brain.update, args=(global_queue, update_event, rolling_event, coord, )))
+    threads.append(threading.Thread(target=brain.update, daemon=True, args=(global_queue, update_event, rolling_event, coord, )))
+    # brain_conn, worker_conn = Pipe()
     for t in threads:
         t.start()
         #time.sleep(0.2)
 
-    # print("before worker")
+    #print("before worker")
     coord.join(threads)
+
+    #data = mp.Array("i", )
+
+    #pool = mp.Pool(processes=4)
+    #pool.map(work, )
     
 
 def saveModel(actor, i, pathToSave):
@@ -292,7 +309,7 @@ def showReward(episode_reward, n, ep, start):
 def showAveReward(wid, episode_reward, n, ep, start):
     reward_string = ""
     for re in episode_reward:
-        reward_string += " {:5.2f} ".format(re / ep)
+        reward_string += " {:5.2f} ".format(re)
     global global_step
     print ('Global step: {:6.0f} | Worker: {:d} | Rewards: {:s}'.format(global_step, wid, reward_string))
 
@@ -319,7 +336,15 @@ def main(args):
     #with tf.device("/gpu:0"):
     # MADDPG for Ave Agent
     # DDPG for Good Agent
+    gpu_options = tf.GPUOptions(per_process_gpu_memory_fraction=0.85)
+    config = tf.ConfigProto(
+        device_count = {'CPU': 0}
+    )
+
+    #config=tf.ConfigProto(gpu_options=gpu_options, log_device_placement=True) 
+    
     with tf.Session() as sess:
+    # with tf.Session(config=config) as sess:
 
         env  = make_env.make_env('simple_tag')
 
@@ -375,42 +400,7 @@ def main(args):
             
             exploration_noise.append(OUNoise(mu = np.zeros(action_dim[i])))
 
-        """
-        print("Test predict")
-        s = env.reset()
-        # print(s[0])
-        actions = []
-        for index in range(len(actors)):
-            state_input = np.reshape(s[index],(-1,actors[index].state_dim))
-            
-            actions.append(actors[index].predict(state_input))
 
-            actors[index].predict_target(state_input)
-
-
-        actions1 = actions[:ave_n]
-        actions2 = actions[ave_n:]
-        a_temp1 = np.transpose(np.asarray(actions1),(1,0,2))
-        a_for_critic1 = np.asarray([x.flatten() for x in a_temp1])
-        a_temp2 = np.transpose(np.asarray(actions2),(1,0,2))
-        a_for_critic2 = np.asarray([x.flatten() for x in a_temp2])
-        for index in range(len(critics)):
-            state_input = np.reshape(s[index],(-1,actors[index].state_dim))
-            if index < ave_n:
-                critics[index].predict_target(state_input, a_for_critic1)
-                #critics[index].predict(state_input, a_for_critic1)
-            else:
-                critics[index].predict_target(state_input, a_for_critic2)
-                #critics[index].predict(state_input, a_for_critic2)
-        """ 
-        
-        # if args['use_gym_monitor']:
-        #    if not args['render_env']:
-        #        envMonitor = wrappers.Monitor(env, args['monitor_dir'], video_callable=False, force=True)
-        #    else:
-        #        envMonitor = wrappers.Monitor(env, args['monitor_dir'], force=True)
-
-        # n brains
         if False:
             for i in range(n):
                 observation_dim.append(env.observation_space[i].shape[0])
@@ -428,7 +418,7 @@ def main(args):
 
             for i in range(n):
                 # load model
-                actors[i].mainModel.load_weights(args["modelFolder"]+ "ep200000/" +str(i)+'_weights'+'.h5')
+                actors[i].mainModel.load_weights(args["modelFolder"]+ "ep10000/" +str(i)+'_weights'+'.h5')
                 # episode 4754
             import time
             #   time.sleep(3)
@@ -491,14 +481,6 @@ def main(args):
             if False: 
                 train(sess,env,args,actors,critics,exploration_noise, ave_n)
             else:
-                global graph, global_queue, update_event, rolling_event, global_step_max, global_step, coord, brain
-                graph = tf.get_default_graph()
-                global_queue = mp.Queue()
-                update_event, rolling_event = mp.Event(), mp.Event()
-                global_step_max, global_step = 200*5000, 0
-                coord = tf.train.Coordinator()
-                brain = Brain(args["modelFolder"])
-
                 distributed_train(sess, env, args, actors, critics, exploration_noise, ave_n)
         #if args['use_gym_monitor']:
         #    envMonitor.monitor.close()
@@ -547,7 +529,7 @@ if __name__ == '__main__':
     parser.add_argument('--gamma', help='discount factor for critic updates', default=0.99)
     parser.add_argument('--tau', help='soft target update parameter', default=0.01)
     parser.add_argument('--buffer-size', help='max size of the replay buffer', default=1000000)
-    parser.add_argument('--minibatch-size', help='size of minibatch for minibatch-SGD', default=64)
+    parser.add_argument('--minibatch-size', help='size of minibatch for minibatch-SGD', default=128)
 
     # run parameters
     #parser.add_argument('--env', help='choose the gym env- tested on {Pendulum-v0}', default='MountainCarContinuous-v0')
@@ -559,7 +541,7 @@ if __name__ == '__main__':
     parser.add_argument('--monitor-dir', help='directory for storing gym results', default='./results/videos/video1')
     parser.add_argument('--summary-dir', help='directory for storing tensorboard info', default='./results/2vs1_distributed/tfdata/')
     parser.add_argument('--modelFolder', help='the folder which saved model data', default="./results/2vs1_distributed/weights/")
-    parser.add_argument('--runTest', help='use saved model to run', default=False)
+    parser.add_argument('--runTest', help='use saved model to run', default=True)
 
     parser.set_defaults(render_env=False)
     parser.set_defaults(use_gym_monitor=False)

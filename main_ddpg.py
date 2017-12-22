@@ -1,4 +1,3 @@
-import tensorflow as tf
 from gym import wrappers
 import make_env
 import numpy as np
@@ -6,15 +5,11 @@ import random
 from ReplayMemory import ReplayMemory
 from ExplorationNoise import OrnsteinUhlenbeckActionNoise as OUNoise
 from actorcriticv2 import ActorNetwork,CriticNetwork
-#from actorcriticv1 import Brain, Worker
-from Train import train
-# from Distributed_Train import *
+from Train_ddpg import train
 import argparse
 from keras.models import load_model
 import os
-import threading, queue, time
-
-
+import tensorflow as tf
 
 
 def main(args):
@@ -29,8 +24,12 @@ def main(args):
     # MADDPG for Ave Agent
     # DDPG for Good Agent
     gpu_options = tf.GPUOptions(per_process_gpu_memory_fraction=0.85)
-
+    config = tf.ConfigProto(
+        device_count = {'CPU': 0}
+    )
+    # config=tf.ConfigProto(gpu_options=gpu_options, log_device_placement=True)
     with tf.Session(config=tf.ConfigProto(gpu_options=gpu_options, log_device_placement=True)) as sess:
+    # with tf.Session(config=config) as sess:
 
         env  = make_env.make_env('simple_tag')
 
@@ -77,12 +76,12 @@ def main(args):
             # critics.append(CriticNetwork(sess,n,observation_dim[i],total_action_dim,float(args['critic_lr']),float(args['tau']),float(args['gamma'])))
             
             
-            if i < ave_n:
+            #if i < ave_n:
                 #MADDPG - centralized Critic
-                critics.append(CriticNetwork(sess,n,observation_dim[i],total_action_dim,float(args['critic_lr']),float(args['tau']),float(args['gamma'])))
-            else:
+                #critics.append(CriticNetwork(sess,n,observation_dim[i],total_action_dim,float(args['critic_lr']),float(args['tau']),float(args['gamma'])))
+           # else:
                 # DDPG
-                critics.append(CriticNetwork(sess,n,observation_dim[i],action_dim[i],float(args['critic_lr']),float(args['tau']),float(args['gamma'])))
+            critics.append(CriticNetwork(sess,n,observation_dim[i],action_dim[i],float(args['critic_lr']),float(args['tau']),float(args['gamma'])))
             
             exploration_noise.append(OUNoise(mu = np.zeros(action_dim[i])))
 
@@ -139,7 +138,7 @@ def main(args):
 
             for i in range(n):
                 # load model
-                actors[i].mainModel.load_weights(args["modelFolder"]+str(i)+'_weights'+'.h5')
+                actors[i].mainModel.load_weights(args["modelFolder"] +str(i)+'_weights'+'.h5')
                 # episode 4754
             import time
             #   time.sleep(3)
@@ -202,23 +201,16 @@ def main(args):
             if True: 
                 train(sess,env,args,actors,critics,exploration_noise, ave_n)
             else:
-                global graph, global_queue, update_event, rolling_event, global_step_max, global_step, coord, brain
-                graph = tf.get_default_graph()
-                global_queue = queue.Queue()
-                update_event, rolling_event = threading.Event(), threading.Event()
-                global_step_max, global_step = 200*1000, 0
-                coord = tf.train.Coordinator()
-                brain = Brain(args["modelFolder"])
-
                 distributed_train(sess, env, args, actors, critics, exploration_noise, ave_n)
         #if args['use_gym_monitor']:
         #    envMonitor.monitor.close()
+
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='provide arguments for DDPG agent')
 
     # agent parameters
-    parser.add_argument('--actor-lr', help='actor network learning rate', default=0.0001)
+    parser.add_argument('--actor-lr', help='actor network learning rate', default=0.001)
     parser.add_argument('--critic-lr', help='critic network learning rate', default=0.001)
     parser.add_argument('--gamma', help='discount factor for critic updates', default=0.99)
     parser.add_argument('--tau', help='soft target update parameter', default=0.01)
@@ -228,14 +220,14 @@ if __name__ == '__main__':
     # run parameters
     #parser.add_argument('--env', help='choose the gym env- tested on {Pendulum-v0}', default='MountainCarContinuous-v0')
     parser.add_argument('--random-seed', help='random seed for repeatability', default=1234)
-    parser.add_argument('--max-episodes', help='max num of episodes to do while training', default=10000)
+    parser.add_argument('--max-episodes', help='max num of episodes to do while training', default=5000)
     parser.add_argument('--max-episode-len', help='max length of 1 episode', default=200)
     parser.add_argument('--render-env', help='render the gym env', action='store_true')
     parser.add_argument('--use-gym-monitor', help='record gym results', action='store_true')
     parser.add_argument('--monitor-dir', help='directory for storing gym results', default='./results/videos/video1')
-    parser.add_argument('--summary-dir', help='directory for storing tensorboard info', default='./results/3vs1_baseline/tfdata/')
-    parser.add_argument('--modelFolder', help='the folder which saved model data', default="./results/3vs1_baseline/weights/")
-    parser.add_argument('--runTest', help='use saved model to run', default=True)
+    parser.add_argument('--summary-dir', help='directory for storing tensorboard info', default='./results/2vs1_ddpg/tfdata/')
+    parser.add_argument('--modelFolder', help='the folder which saved model data', default="./results/2vs1_ddpg/weights/")
+    parser.add_argument('--runTest', help='use saved model to run', default=False)
 
     parser.set_defaults(render_env=False)
     parser.set_defaults(use_gym_monitor=False)
@@ -245,7 +237,7 @@ if __name__ == '__main__':
     #pp.pprint(args)
 
     ## Distributed
-    
+
     main(args)
 
 

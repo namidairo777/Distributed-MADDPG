@@ -5,127 +5,17 @@ import tensorflow as tf
 import random
 from ReplayMemory import ReplayMemory
 from keras.callbacks import TensorBoard
-# from dmaddpg import Brain, Worker
+import make_env
+import multiprocessing as mp
 import time, os
+from actorcriticv2 import ActorNetwork
+from ExplorationNoise import OrnsteinUhlenbeckActionNoise as OUNoise
 # from actorcritic import ActorNetwork,CriticNetwork
 
 ###########################
 #####     BRAIN    ########
 ###########################
 
-class Brain(object):
-    def __init__(self, modelFolder):
-        self.actors = None
-        self.critics = None
-        self.ave_n = None
-        self.env_n = None
-        self.modelFolder = modelFolder
-
-    def update(self):
-        
-        global global_step, global_step_max
-        while not coord.should_stop():
-            if global_step < global_step_max: 
-                update_event.wait()
-                # print("Brain working!")
-                #global global_queue
-                s_batch, a_batch, r_batch, d_batch, s2_batch = [], [], [], [], []
-                for i in range(global_queue.qsize()):
-                    data = global_queue.get()
-                    s_batch.append(data[0])
-                    a_batch.append(data[1])
-                    r_batch.append(data[2])
-                    d_batch.append(data[3])
-                    s2_batch.append(data[4])
-
-                s_batch = np.array(s_batch)
-                a_batch = np.array(a_batch)
-                r_batch = np.array(r_batch)
-                d_batch = np.array(d_batch)
-                s2_batch = np.array(s2_batch)
-                # print("batch size:", s_batch.shape, s2_batch.shape)
-                action_dims_done = 0
-                for i in range(self.ave_n):
-                    actor = self.actors[i]
-                    critic = self.critics[i]
-                    if True: 
-                        a = []
-                        for j in range(self.ave_n):
-                            state_batch_j = np.asarray([x for x in s_batch[:,j]]) #batch processing will be much more efficient even though reshaping will have to be done
-                            a.append(self.actors[j].predict_target(state_batch_j))
-                        a_temp = np.transpose(np.asarray(a),(1,0,2))
-                        a_for_critic = np.asarray([x.flatten() for x in a_temp])
-                        s2_batch_i = np.asarray([x for x in s2_batch[:,i]]) # Checked till this point, should be fine.
-                        targetQ = critic.predict_target(s2_batch_i,a_for_critic) # Should  work, probably
-                        yi = []
-                        for k in range(int(args['minibatch_size'])):
-                            if d_batch[:,i][k]:
-                                yi.append(r_batch[:,i][k])
-                            else:
-                                yi.append(r_batch[:,i][k] + critic.gamma*targetQ[k])
-                        s_batch_i = np.asarray([x for x in s_batch[:,i]])
-                        
-                        critic.train(s_batch_i,np.asarray([x.flatten() for x in a_batch[:, 0: self.ave_n, :]]),np.asarray(yi))
-                        
-                        actions_pred = []
-                        for j in range(self.ave_n):
-                            state_batch_j = np.asarray([x for x in  s2_batch[:,j]])
-                            actions_pred.append(self.actors[j].predict(state_batch_j)) # Should work till here, roughly, probably
-                        a_temp = np.transpose(np.asarray(actions_pred),(1,0,2))
-                        a_for_critic_pred = np.asarray([x.flatten() for x in a_temp])
-                        s_batch_i = np.asarray([x for x in s_batch[:,i]])
-                        grads = critic.action_gradients(s_batch_i,a_for_critic_pred)[:,action_dims_done:action_dims_done + actor.action_dim]
-                        actor.train(s_batch_i,grads)
-                        # actor.update_target()
-                        # critic.update_target()
-                    action_dims_done = action_dims_done + actor.action_dim
-                
-                # Only DDPG agent
-                for i in range(self.ave_n, self.env_n):
-                    actor = self.actors[i]
-                    critic = self.critics[i]
-                    if True:            
-                        s_batch_i = np.asarray([x for x in s_batch[:,i]])
-                        action = np.asarray(actor.predict_target(s_batch_i))
-                        action_for_critic = np.asarray([x.flatten() for x in action])
-                        s2_batch_i = np.asarray([x for x in s2_batch[:, i]])
-                        
-                        targetQ = critic.predict_target(s2_batch_i, action_for_critic)
-
-                        y_i = []
-                        for k in range(int(args['minibatch_size'])):
-                            # If ep is end
-                            if d_batch[:, i][k]:
-                                y_i.append(r_batch[:, i][k])
-                            else:
-                                y_i.append(r_batch[:, i][k] + critic.gamma * targetQ[k])
-
-                        s_batch_i= np.asarray([x for x in s_batch[:, i]])
-                        critic.train(s_batch_i, np.asarray([x.flatten() for x in a_batch[:, i]]), np.asarray(y_i))
-                        action_for_critic_pred = actor.predict(s2_batch_i)
-                        gradients = critic.action_gradients(s_batch_i, action_for_critic_pred)[:, :]
-                        actor.train(s_batch_i, gradients)
-                        
-                for i in range(self.env_n):
-                    actor = self.actors[i]
-                    critic = self.critics[i]
-                    actor.update_target()
-                    critic.update_target()
-
-                global_step += 1
-
-                if global_step % (100*50) == 0 and global_step != 0:
-                    directory = self.modelFolder + "ep" + str(global_step) + "/"
-                    if not os.path.exists(directory):
-                        os.makedirs(directory)
-                        print("Starting saving model weights to folder every 200 episodes")
-                    for i in range(self.env_n):
-                        # saveModel(actors[i], i, args["modelFolder"])
-                        saveWeights(self.actors[i], i, directory)
-                        print("Model weights saved to folder")
-
-                update_event.clear()        # updating finished
-                rolling_event.set()
 
 ###########################
 #####    WORKER    ########
@@ -138,68 +28,38 @@ class Worker(object):
         self.env = make_env.make_env("simple_tag")
         print("Initiate worker ", wid)
         self.env.seed(int(seed))
-        self.brain = brain
         self.agent_num = n
         self.max_episode_len = max_episode_len
         self.batch_size = batch_size
         self.noise = noise
+        self.actors = []
 
-    def work(self):
-        global global_step_max, global_step
-        
-        while not coord.should_stop():
-            s = self.env.reset()
-            episode_reward = np.zeros((self.agent_num,))
-            start = time.time()
-            # print("env", s[0])
-            buffer_s, buffer_a, buffer_r = [], [], []
-            for stp in range(200):
-                if not rolling_event.is_set():
-                    rolling_event.wait()
-                   
-                # self.env.render()
-                actions = []
-                global graph
-                with graph.as_default():
-                # print("s0:", s[0])
-                    for i in range(self.agent_num):
-                        # print("Taking actions")
-                        actor = self.brain.actors[i]    
+    def work(self, env):
 
-                        # print("wid:", self.wid, " actor!", i)
-                        state_input = np.reshape(s[i],(-1,actor.state_dim))
-                        # print(state_input)
-                        
-                        actions.append(actor.act(state_input, self.noise[i]()).reshape(actor.action_dim,)) 
-                    
-                    s2, r, done, _ = self.env.step(actions)
+        print("Worker ", self.wid, "starts working")
+        s = env.reset()
 
-                    episode_reward += r
+        batch_data = []
 
-                    if stp == self.max_episode_len - 1:
-                        Q = self.
+        for stp in range(self.max_episode_len):
+            
+            actions = []
+            for i in range(self.agent_num):
+                      # print("Taking actions")
+                actor = self.actors[i]    
 
-                if global_queue.qsize() < self.batch_size:
-                    global_queue.put([s, actions, r, done, s2])
-                # global_step += 1
-                s = s2
-                episode_reward += r
-
-                if stp == self.max_episode_len - 1:
-                    if self.wid == 0:
-                        showAveReward(self.wid, episode_reward, self.agent_num, stp, start)
-                    break
+                state_input = np.reshape(s[i],(-1,actor.state_dim))
                 
-                if global_queue.qsize() > self.batch_size - 1:
+                actions.append(actor.act(state_input, self.noise[i]()).reshape(actor.action_dim,)) 
                     
-                    rolling_event.clear()
-                    update_event.set()
-                    
+            s2, r, done, _ = env.step(actions)
 
-                    if global_step >= global_step_max:
-                        coord.request_stop()
-                        break
+            batch_data.append((s, actions, r, done, s2))
 
+            s = s2
+
+            # if stp == self.max_episode_len - 1:
+        return batch_data  
 
 def build_summaries(n):
     losses = [tf.Variable(0.) for i in range(n)]
@@ -232,50 +92,195 @@ class Controller(object):
 
         self.coord = tf.train.Coordinator()
 
+def get_batch(worker, actors):
+    return worker.work()
+
+class SampleA(object):
+    def __init__(self, i, sess):
+        self.wid = i
+        self.model = ActorNetwork(sess, 1, 2, 0.1, 0.9)
+    def out(self, i):
+        print(self.wid)
+        self.model.update_target()
+
+
+
+def work(j):
+    
+    global workers
+    env = make_env.make_env("simple_tag")
+    s = env.reset()
+    batch_data = []
+    for stp in range(5):
+        actions = []
+        for i in range(3):
+            actor = workers[j][i]    
+            state_input = np.reshape(s[i],(-1,actor.state_dim))
+            actions.append(actor.act(state_input, exploration_noise[i]()).reshape(actor.action_dim,)) 
+        s2, r, done, _ = env.step(actions)
+        batch_data.append((s, actions, r, done, s2))
+        s = s2
+    return batch_data  
+
 
 def distributed_train(sess, env, args, actors, critics, noise, ave_n):
 
-    global graph, global_queue, update_event, rolling_event, global_step_max, global_step, coord, brain
-    graph = tf.get_default_graph()
-    global_queue = queue.Queue()
-    update_event, rolling_event = threading.Event(), threading.Event()
-    global_step_max, global_step = 200*10000, 0
-    coord = tf.train.Coordinator()
-    brain = Brain(args["modelFolder"])
+    worker_num = 4
+    #########
+    # Worker session
+    #
+    gpu_options = tf.GPUOptions(per_process_gpu_memory_fraction=0.05)
+    worker_sess = tf.Session(config=tf.ConfigProto(gpu_options=gpu_options, log_device_placement=True))
+    
+    global workers
+
+    workers = [[] for i in range(worker_num)]
+    for actor in actors:
+        for worker in workers:
+            worker.append(ActorNetwork(worker_sess, actor.state_dim, actor.action_dim, actor.lr, actor.tau))
+    #######################
+    print(len(workers), len(workers[0]))
+
+    global exploration_noise
+    exploration_noise =[] 
     
     for actor in actors:
+        exploration_noise.append(OUNoise(mu = np.zeros(actor.action_dim)))
         actor.update_target()
     for critic in critics:
         critic.update_target()
     
-    worker_num = 4
-    global update_event, rolling_event
-    update_event.clear()
-    rolling_event.set()
-    
-    brain.actors = actors
-    brain.critics = critics
-    brain.ave_n = ave_n
-    brain.env_n = env.n
 
-    workers = [Worker(i, env.n, 200, 64, 1234+i, noise) for i in range(worker_num)] 
+    pool = mp.Pool(processes=mp.cpu_count()-1)
 
-    global_queue = queue.Queue()
+    replayMemory = ReplayMemory(int(args['buffer_size']),int(args['random_seed']))
 
-    threads = []
+    for timestep in range(int(args['max_episodes'] * args['max_episode_len'])):
 
-    for worker in workers:
-        t = threading.Thread(target=worker.work, args=())
-        threads.append(t)
-    threads.append(threading.Thread(target=brain.update, args=()))
-    
-    for t in threads:
-        t.start()
-        #time.sleep(0.2)
+        start = time.time()
 
-    # print("before worker")
-    coord.join(threads)
-    
+        # print(workers[0].work())
+        # jobs = [pool.apply_async(sample.out, ()) for sample in samples]
+
+        jobs = [pool.apply_async(work, args=(j, )) for j in range(len(workers))]
+        
+        # res = pool.map(samples[0].out, [1,2,3])
+        #time.sleep(10)
+        
+        for job in jobs:
+            data = job.get()
+            for item in data:
+                (s, a, r, d, s2) = item
+                print(item)
+                # replayMemory.add(s,a,r,done,s2)
+        
+        sleep(10)
+        #losses = []
+        action_dims_done = 0
+
+
+        # MADDPG Adversary Agent            
+        for i in range(ave_n):
+            actor = actors[i]
+            critic = critics[i]
+            
+            s_batch,a_batch,r_batch,d_batch,s2_batch = replayMemory.miniBatch(int(args['minibatch_size']))
+            a = []
+            for j in range(ave_n):
+                state_batch_j = np.asarray([x for x in s_batch[:,j]]) #batch processing will be much more efficient even though reshaping will have to be done
+                a.append(actors[j].predict_target(state_batch_j))
+            
+            a_temp = np.transpose(np.asarray(a),(1,0,2))
+            
+            a_for_critic = np.asarray([x.flatten() for x in a_temp])
+            s2_batch_i = np.asarray([x for x in s2_batch[:,i]]) # Checked till this point, should be fine.
+            
+            targetQ = critic.predict_target(s2_batch_i,a_for_critic) # Should  work, probably
+            yi = []
+            for k in range(int(args['minibatch_size'])):
+                if d_batch[:,i][k]:
+                    yi.append(r_batch[:,i][k])
+                else:
+                    yi.append(r_batch[:,i][k] + critic.gamma*targetQ[k])
+            s_batch_i = np.asarray([x for x in s_batch[:,i]])
+            
+            critic.train(s_batch_i,np.asarray([x.flatten() for x in a_batch[:, 0: ave_n, :]]),np.asarray(yi))
+            #losses.append(loss)
+            
+            actions_pred = []
+            for j in range(ave_n):
+                state_batch_j = np.asarray([x for x in  s2_batch[:,j]])
+                actions_pred.append(actors[j].predict(state_batch_j)) # Should work till here, roughly, probably
+            a_temp = np.transpose(np.asarray(actions_pred),(1,0,2))
+            a_for_critic_pred = np.asarray([x.flatten() for x in a_temp])
+            s_batch_i = np.asarray([x for x in s_batch[:,i]])
+            grads = critic.action_gradients(s_batch_i,a_for_critic_pred)[:,action_dims_done:action_dims_done + actor.action_dim]
+            actor.train(s_batch_i,grads)
+            action_dims_done = action_dims_done + actor.action_dim
+        # Only DDPG agent
+        
+        for i in range(ave_n, env.n):
+            actor = actors[i]
+            critic = critics[i]
+            s_batch, a_batch, r_batch, d_batch, s2_batch = replayMemory.miniBatch(int(args["minibatch_size"]))
+            s_batch_i = np.asarray([x for x in s_batch[:,i]])
+            action = np.asarray(actor.predict_target(s_batch_i))
+            
+            action_for_critic = np.asarray([x.flatten() for x in action])
+            s2_batch_i = np.asarray([x for x in s2_batch[:, i]])
+            targetQ = critic.predict_target(s2_batch_i, action_for_critic)
+            y_i = []
+            for k in range(int(args['minibatch_size'])):
+                # If ep is end
+                if d_batch[:, i][k]:
+                    y_i.append(r_batch[:, i][k])
+                else:
+                    y_i.append(r_batch[:, i][k] + critic.gamma * targetQ[k])
+            # state batch for agent i
+            s_batch_i= np.asarray([x for x in s_batch[:, i]])
+            critic.train(s_batch_i, np.asarray([x.flatten() for x in a_batch[:, i]]), np.asarray(y_i))
+            #losses.append(loss)
+            action_for_critic_pred = actor.predict(s2_batch_i)
+            gradients = critic.action_gradients(s_batch_i, action_for_critic_pred)[:, :]
+            actor.train(s_batch_i, gradients)
+        
+        for i in range(0, env.n):
+            actor = actors[i]
+            critic = critics[i]
+            actor.update_target()
+            critic.update_target()
+        
+        episode_reward += r
+        
+        if timestep % int(args["max_episode_len"]) == 0:
+            print("timestep: ", timestep)
+            print("time: ", time.time() - start)
+            # showReward(episode_reward, env.n, ep, start)
+            
+        """
+        # save model
+        if ep % 50 == 0 and ep != 0:
+            print("Starting saving model weights every 50 episodes")
+            for i in range(env.n):
+                # saveModel(actors[i], i, args["modelFolder"])
+                saveWeights(actors[i], i, args["modelFolder"])
+            print("Model weights saved")
+
+        if ep % 200 == 0 and ep != 0:
+            directory = args["modelFolder"] + "ep" + str(ep) + "/"
+            if not os.path.exists(directory):
+                os.makedirs(directory)
+            print("Starting saving model weights to folder every 200 episodes")
+            for i in range(env.n):
+                # saveModel(actors[i], i, args["modelFolder"])
+                saveWeights(actors[i], i, directory)
+            print("Model weights saved to folder")
+        """
+
+        # print("Cost Time: ", int(time.time() - start), "s")
+
+
+
 
 def saveModel(actor, i, pathToSave):
     actor.mainModel.save(pathToSave + str(i) + ".h5")

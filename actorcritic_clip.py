@@ -23,9 +23,9 @@ class ActorNetwork(object):
 		self.action_dim = action_dim
 		self.lr =  lr
 		self.tau = tau
-		self.mainModel,self.mainModel_weights,self.mainModel_state = self._build_baseline1_model()
+		self.mainModel,self.mainModel_weights,self.mainModel_state = self._build_baseline_model()
 		self.mainModel._make_predict_function()
-		self.targetModel,self.targetModel_weights,_ = self._build_baseline1_model()
+		self.targetModel,self.targetModel_weights,_ = self._build_baseline_model()
 		self.targetModel._make_predict_function()
 		self.action_gradient = tf.placeholder(tf.float32,[None,self.action_dim])
 		self.params_grad = tf.gradients(self.mainModel.output, self.mainModel_weights, self.action_gradient)
@@ -100,25 +100,7 @@ class ActorNetwork(object):
 		
 		# pred = Lambda(lambda h: tf.contrib.distributions.RelaxedOneHotCategorical(0.1,probs=h).sample())(h)
 		# pred = model.add(Lambda(ontHot(h))(h))
-		# pred = Lambda(lambda h: tf.contrib.distributions.RelaxedOneHotCategorical(0.1,probs=h).sample())(h)
-		model = Model(inputs=input_obs,outputs=pred)
-		model.compile(optimizer='Adam',loss='categorical_crossentropy')
-		return model,model.trainable_weights,input_obs
 
-	def _build_baseline1_model(self):
-		input_obs = Input(shape=(self.state_dim,))
-		h = Dense(400)(input_obs)
-		h = Activation('relu')(h)
-		#h = BatchNormalization()(h)
-		h = Dense(300)(h)
-		h = Activation('relu')(h)
-		#h = BatchNormalization()(h)
-		h = Dense(self.action_dim)(h)
-		pred = Activation('tanh')(h)
-		
-		# pred = Lambda(lambda h: tf.contrib.distributions.RelaxedOneHotCategorical(0.1,probs=h).sample())(h)
-		# pred = model.add(Lambda(ontHot(h))(h))
-		# pred = Lambda(lambda h: tf.contrib.distributions.RelaxedOneHotCategorical(0.1,probs=h).sample())(h)
 		model = Model(inputs=input_obs,outputs=pred)
 		model.compile(optimizer='Adam',loss='categorical_crossentropy')
 		return model,model.trainable_weights,input_obs
@@ -176,76 +158,18 @@ class CriticNetwork(object):
 		self.tau = tau
 		self.num_agents = num_agents
 		self.gamma  =  gamma
-		self.mainModel,self.state,self.actions = self._build_maddpg_model()
+		self.mainModel,self.state,self.actions = self._build_baseline_model()
 		self.mainModel._make_predict_function()
 		self.mainModel._make_train_function()
-		self.targetModel,_,_ = self._build_maddpg_model()
+		self.targetModel,_,_ = self._build_baseline_model()
 		self.targetModel._make_predict_function()
 		self.action_grads  = tf.gradients(self.mainModel.output,self.actions)
 		self.sess.run(tf.global_variables_initializer())
 		# self.default_graph = tf.get_default_graph()
 		# self.default_graph.finalize()
-
-	# Network architecture
-	def _build_model(self):
-		input_obs = Input(shape=(self.state_dim,))
-		input_actions = Input(shape=(self.action_dim,))
-		h = Dense(128)(input_obs)
-		h = Activation('relu')(h)
-		#h = BatchNormalization()(h)
-		action_abs = Dense(128)(input_actions)
-		temp1 = Dense(128)(h)
-		#action_abs = Activation('relu')(action_abs)
-		#action_abs = BatchNormalization()(action_abs)
-		h = Add()([temp1,action_abs])
-		#h = Dense(64)(h)
-		h = Activation('relu')(h)
-		#h = BatchNormalization()(h)
-		pred = Dense(1,kernel_initializer='random_uniform')(h)
-		model = Model(inputs=[input_obs,input_actions],outputs=pred)
-		# , metrics=['mae']
-		model.compile(optimizer='Adam',loss='mean_squared_error')
-		return model,input_obs,input_actions
-
-	def _build_hard_model(self):
-		input_obs = Input(shape=(self.state_dim,))
-		input_actions = Input(shape=(self.action_dim,))
-		h = Dense(400)(input_obs)
-		h = Activation('relu')(h)
-		#h = BatchNormalization()(h)
-		action_abs = Dense(300)(input_actions)
-		temp1 = Dense(300)(h)
-		#action_abs = Activation('relu')(action_abs)
-		#action_abs = BatchNormalization()(action_abs)
-		h = Add()([temp1,action_abs])
-		#h = Dense(64)(h)
-		h = Activation('relu')(h)
-		#h = BatchNormalization()(h)
-		pred = Dense(1,kernel_initializer='random_uniform')(h)
-		model = Model(inputs=[input_obs,input_actions],outputs=pred)
-		model.compile(optimizer='Adam',loss='mean_squared_error')
-		return model,input_obs,input_actions
-
-	def _build_hard2_model(self):
-		input_obs = Input(shape=(self.state_dim,))
-		input_actions = Input(shape=(self.action_dim,))
-		h = Dense(400)(input_obs)
-		h = Activation('relu')(h)
-		#h = BatchNormalization()(h)
-		# action_abs = Dense(300)(input_actions)
-		# temp1 = Dense(300)(h)
-		#action_abs = Activation('relu')(action_abs)
-		#action_abs = BatchNormalization()(action_abs)
-		h = Concatenate(axis=-1)([h,input_actions])
-		h = Dense(300)(h)
-		h = Activation('relu')(h)
-		#h = BatchNormalization()(h)
-		pred = Dense(1,kernel_initializer='random_uniform')(h)
-		model = Model(inputs=[input_obs,input_actions],outputs=pred)
-		model.compile(optimizer='Adam',loss='mean_squared_error')
-		return model,input_obs,input_actions
-
-	def _build_maddpg_model(self):
+		# keras.optimizers.Adam(lr=0.001, beta_1=0.9, beta_2=0.999, epsilon=1e-08, decay=0.0)
+	
+	def _build_baseline_model(self):
 		input_obs = Input(shape=(self.state_dim,))
 		input_actions = Input(shape=(self.action_dim,))
 		h = Dense(400)(input_obs)
@@ -262,61 +186,7 @@ class CriticNetwork(object):
 		model.compile(optimizer='Adam',loss='mean_squared_error')
 		return model,input_obs,input_actions
 
-	def _build_baseline_model(self):
-		input_obs = Input(shape=(self.state_dim,))
-		input_actions = Input(shape=(self.action_dim,))
-		
-		temp_obs = Dense(400)(input_obs)
-		obs1 = Activation('relu')(temp_obs)
-		obs2 = Dense(300)(obs1)
-		actions1 = Dense(300)(input_actions)
 
-		h = Add()([obs2, actions1])
-		h = Dense(300)(h)
-		h = Activation('relu')(h)
-
-		pred = Dense(1,kernel_initializer='random_uniform')(h)
-		model = Model(inputs=[input_obs,input_actions],outputs=pred)
-		model.compile(optimizer='Adam',loss='mean_squared_error')
-		return model,input_obs,input_actions
-
-	def _build_hard3_model(self):
-		input_obs = Input(shape=(self.state_dim,))
-		input_actions = Input(shape=(self.action_dim,))
-		temp_obs = Dense(400)(input_obs)
-		obs = Activation('relu')(temp_obs)
-		temp_actions = Dense(400)(input_actions)
-		actions =  Activation('relu')(temp_actions)
-
-		#h = BatchNormalization()(h)
-		# action_abs = Dense(300)(input_actions)
-		# temp1 = Dense(300)(h)
-		#action_abs = Activation('relu')(action_abs)
-		#action_abs = BatchNormalization()(action_abs)
-		h = Add()([obs,actions])
-		h = Dense(300)(h)
-		h = Activation('relu')(h)
-		#h = BatchNormalization()(h)
-		pred = Dense(1,kernel_initializer='random_uniform')(h)
-		model = Model(inputs=[input_obs,input_actions],outputs=pred)
-		model.compile(optimizer='Adam',loss='mean_squared_error')
-		return model,input_obs,input_actions
-
-	# Simple Network model
-	def _build_simple_model(self):
-		input_obs = Input(shape=(self.state_dim,))
-		input_actions = Input(shape=(self.action_dim,))
-		h = Dense(64)(input_obs)
-		h = Activation('relu')(h)
-		h = Concatenate(axis=-1)([h,input_actions])
-		h = Dense(64)(h)
-		h = Activation('relu')(h)
-		pred = Dense(1, kernel_initializer=initializers.RandomUniform(minval=-3e-3, maxval=3e-3))(h)
-		# pred = Dense(1,initializers.RandomUniform(minval=-3e-3, maxval=3e-3))(h)
-		model = Model(inputs=[input_obs,input_actions],outputs=pred)
-		# , metrics=['mae']
-		model.compile(optimizer='Adam',loss='mean_squared_error')
-		return model,input_obs,input_actions
 
 	# Get action gradients for Actor to update from ys (Critic Q) / xs (Actions)
 	def action_gradients(self,states,actions):
@@ -345,48 +215,3 @@ class CriticNetwork(object):
 		return self.mainModel.train_on_batch([state,actions],labels)
 		#return self.predict(state,actions)
 
-
-"""
-eP 4750 network architecture
-
-Actor
-# Network architecture
-	def _build_model(self):
-		input_obs = Input(shape=(self.state_dim,))
-		h = Dense(64)(input_obs)
-		h = Activation('relu')(h)
-		h = BatchNormalization()(h)
-		h = Dense(64)(h)
-		h = Activation('relu')(h)
-		h = BatchNormalization()(h)
-		h = Dense(self.action_dim)(h)
-		pred = Activation('softmax')(h)
-		#pred = tf.contrib.distributions.RelaxedOneHotCategorical(0.1,probs=h).sample()
-		model = Model(inputs=input_obs,outputs=pred)
-		model.compile(optimizer='Adam',loss='categorical_crossentropy')
-		return model,model.trainable_weights,input_obs
-
-
-Critic 
-def _build_hard_model(self):
-		input_obs = Input(shape=(self.state_dim,))
-		input_actions = Input(shape=(self.action_dim,))
-		h = Dense(400)(input_obs)
-		h = Activation('relu')(h)
-		#h = BatchNormalization()(h)
-		action_abs = Dense(300)(input_actions)
-		temp1 = Dense(300)(h)
-		#action_abs = Activation('relu')(action_abs)
-		#action_abs = BatchNormalization()(action_abs)
-		h = Add()([temp1,action_abs])
-		#h = Dense(64)(h)
-		h = Activation('relu')(h)
-		#h = BatchNormalization()(h)
-		pred = Dense(1,kernel_initializer='random_uniform')(h)
-		model = Model(inputs=[input_obs,input_actions],outputs=pred)
-		model.compile(optimizer='Adam',loss='mean_squared_error')
-		return model,input_obs,input_actions
-
-
-
-"""

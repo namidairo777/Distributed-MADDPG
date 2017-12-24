@@ -101,18 +101,40 @@ def train(sess,env,args,actors,critics,noise, ave_n):
 					s_batch_i = np.asarray([x for x in s_batch[:,i]])
 					a_batch_data = np.asarray([x.flatten() for x in a_batch[:, 0: ave_n, :]])
 					target_q = np.asarray(yi)
+					# loss = batch
+					losses = []
+					# clip
+					index = 0
+					# number of losses
+					loss_num = int(int(args['m_size']) / int(args['n_size']))
+					for i in range(loss_num):
+						loss = critic.get_loss(s_batch_i[index:index+int(args["n_size"])], 
+											   a_batch_data[index:index+int(args["n_size"])], 
+											   target_q[index:index+int(args["n_size"])])
+						losses.append(loss)
+						index += int(args["n_size"])
+					# which has max loss
+					sorted_index = np.argsort(losses).tolist()
+					max_index = sorted_index[-1]
+					# clip index
+					head = max_index * int(args["n_size"])
+					tail = head + int(args["n_size"])
+					# clipped batch data with higher losses
+					prioritized_a_batch = a_batch_data[head: tail] 
+					prioritized_s_batch = s_batch_i[head: tail] 
+					prioritized_target_q = target_q[head: tail]
 					# critic train
-					critic.train(s_batch_i, a_batch_data, target_q)
+					critic.train(prioritized_s_batch, prioritized_a_batch, prioritized_target_q)
 					actions_pred = []
 					# for j in range(ave_n):
 					for j in range(ave_n):
 						state_batch_j = np.asarray([x for x in  s2_batch[:,j]])
-						actions_pred.append(actors[j].predict(state_batch_j[: ])) 
+						actions_pred.append(actors[j].predict(state_batch_j[head: tail])) 
 					a_temp = np.transpose(np.asarray(actions_pred),(1,0,2))
 					a_for_critic_pred = np.asarray([x.flatten() for x in a_temp])
-					grads = critic.action_gradients(s_batch_i, a_for_critic_pred)[:,action_dims_done:action_dims_done + actor.action_dim]
+					grads = critic.action_gradients(prioritized_s_batch, a_for_critic_pred)[:,action_dims_done:action_dims_done + actor.action_dim]
 					# actor train
-					actor.train(s_batch_i, grads)
+					actor.train(prioritized_s_batch, grads)
 				action_dims_done = action_dims_done + actor.action_dim
 			# Only DDPG agent			
 			for i in range(ave_n, env.n):

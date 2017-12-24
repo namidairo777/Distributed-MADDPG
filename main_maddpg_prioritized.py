@@ -4,7 +4,7 @@ import random
 from ReplayMemory import ReplayMemory
 from ExplorationNoise import OrnsteinUhlenbeckActionNoise as OUNoise
 from actorcritic_dis import ActorNetwork,CriticNetwork
-from Train_maddpg import train
+from Train_maddpg_prioritized import train
 import argparse
 from keras.models import load_model
 import os

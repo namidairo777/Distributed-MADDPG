@@ -1,10 +1,9 @@
-from gym import wrappers
 import make_env
 import numpy as np
 import random
 from ReplayMemory import ReplayMemory
 from ExplorationNoise import OrnsteinUhlenbeckActionNoise as OUNoise
-from actorcriticv2 import ActorNetwork,CriticNetwork
+from actorcritic_dis import ActorNetwork,CriticNetwork
 from Train_maddpg import train
 import argparse
 from keras.models import load_model
@@ -23,7 +22,7 @@ def main(args):
     #with tf.device("/gpu:0"):
     # MADDPG for Ave Agent
     # DDPG for Good Agent
-    gpu_options = tf.GPUOptions(per_process_gpu_memory_fraction=0.87)
+    gpu_options = tf.GPUOptions(per_process_gpu_memory_fraction=0.85)
     config = tf.ConfigProto(
         device_count = {'CPU': 0}
     )
@@ -94,18 +93,10 @@ def main(args):
                                    observation_dim[i], total_action_dim, float(args['critic_lr']), float(args['tau']),float(args['gamma'])))
                 exploration_noise.append(OUNoise(mu = np.zeros(action_dim[i]))) 
 
-            # learn()
-
         if args["runTest"]:
             print("run test")
-
             for i in range(n):
-                # load model
-                # + "../../good_weights/actor" 
                 actors[i].mainModel.load_weights(args["modelFolder"] + str(i)+'_weights'+'.h5')
-                # episode 4754
-            import time
-            #   time.sleep(3)
             for ep in range(10):
                 s = env.reset()
                 reward = 0.0
@@ -139,7 +130,7 @@ def main(args):
                 s = env.reset()
                 for j in range(env.n):
                     actors[j].mainModel.load_weights(args["modelFolder"]+ str(j) +'_weights'+'.h5')
-                for step in range(300):
+                for step in range(200):
                     
                     reward = 0.0
                     # time.sleep(0.05)
@@ -164,8 +155,6 @@ def main(args):
                 train(sess,env,args,actors,critics,exploration_noise, ave_n)
             else:
                 distributed_train(sess, env, args, actors, critics, exploration_noise, ave_n)
-        #if args['use_gym_monitor']:
-        #    envMonitor.monitor.close()
 
 
 if __name__ == '__main__':
@@ -189,9 +178,10 @@ if __name__ == '__main__':
     parser.add_argument('--use-gym-monitor', help='record gym results', action='store_true')
     parser.add_argument('--monitor-dir', help='directory for storing gym results', default='./results/videos/video1')
     parser.add_argument('--summary-dir', help='directory for storing tensorboard info', default='./results/2vs1_maddpg_tanh/tfdata/')
-    parser.add_argument('--modelFolder', help='the folder which saved model data', default="./results/2vs1_maddpg_tanh/weights/")
-    parser.add_argument('--runTest', help='use saved model to run', default=True)
-    parser.add_argument('--prioritized', help='Whether Prioritized', default=False)
+    parser.add_argument('--modelFolder', help='the folder which saved model data', default="./results/2vs1_maddpg_tanh/weights_prioritized/")
+    parser.add_argument('--runTest', help='use saved model to run', default=False)
+    parser.add_argument('--m-size', help='M size', default=128)
+    parser.add_argument('--n-size', help='N size', default=64)
 
     parser.set_defaults(render_env=False)
     parser.set_defaults(use_gym_monitor=False)

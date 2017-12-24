@@ -130,7 +130,7 @@ def distributed_train(sess, env, args, actors, critics, noise, ave_n):
     # Worker session
     #
     gpu_options = tf.GPUOptions(per_process_gpu_memory_fraction=0.05)
-    worker_sess = tf.Session(config=tf.ConfigProto(gpu_options=gpu_options, log_device_placement=True))
+    worker_sess = tf.Session(config=tf.ConfigProto(gpu_options=gpu_options, log_device_placement=False))
     
     global workers
 

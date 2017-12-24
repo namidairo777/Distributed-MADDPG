@@ -29,7 +29,7 @@ def main(args):
         device_count = {'CPU': 0}
     )
     # config=tf.ConfigProto(gpu_options=gpu_options, log_device_placement=True)
-    with tf.Session(config=tf.ConfigProto(gpu_options=gpu_options, log_device_placement=True)) as sess:
+    with tf.Session( config=tf.ConfigProto(gpu_options=gpu_options, log_device_placement=False)) as sess:
     # with tf.Session(config=config) as sess:
 
         env  = make_env.make_env('simple_tag')

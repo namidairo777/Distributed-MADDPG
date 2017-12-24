@@ -23,12 +23,12 @@ def main(args):
     #with tf.device("/gpu:0"):
     # MADDPG for Ave Agent
     # DDPG for Good Agent
-    gpu_options = tf.GPUOptions(per_process_gpu_memory_fraction=0.85)
+    gpu_options = tf.GPUOptions(per_process_gpu_memory_fraction=0.9)
     config = tf.ConfigProto(
         device_count = {'CPU': 0}
     )
     # config=tf.ConfigProto(gpu_options=gpu_options, log_device_placement=True)
-    with tf.Session(config=tf.ConfigProto(gpu_options=gpu_options, log_device_placement=True)) as sess:
+    with tf.Session() as sess:
     # with tf.Session(config=config) as sess:
 
         env  = make_env.make_env('simple_tag')
@@ -84,41 +84,6 @@ def main(args):
             critics.append(CriticNetwork(sess,n,observation_dim[i],action_dim[i],float(args['critic_lr']),float(args['tau']),float(args['gamma'])))
             
             exploration_noise.append(OUNoise(mu = np.zeros(action_dim[i])))
-
-        """
-        print("Test predict")
-        s = env.reset()
-        # print(s[0])
-        actions = []
-        for index in range(len(actors)):
-            state_input = np.reshape(s[index],(-1,actors[index].state_dim))
-            
-            actions.append(actors[index].predict(state_input))
-
-            actors[index].predict_target(state_input)
-
-
-        actions1 = actions[:ave_n]
-        actions2 = actions[ave_n:]
-        a_temp1 = np.transpose(np.asarray(actions1),(1,0,2))
-        a_for_critic1 = np.asarray([x.flatten() for x in a_temp1])
-        a_temp2 = np.transpose(np.asarray(actions2),(1,0,2))
-        a_for_critic2 = np.asarray([x.flatten() for x in a_temp2])
-        for index in range(len(critics)):
-            state_input = np.reshape(s[index],(-1,actors[index].state_dim))
-            if index < ave_n:
-                critics[index].predict_target(state_input, a_for_critic1)
-                #critics[index].predict(state_input, a_for_critic1)
-            else:
-                critics[index].predict_target(state_input, a_for_critic2)
-                #critics[index].predict(state_input, a_for_critic2)
-        """ 
-        
-        # if args['use_gym_monitor']:
-        #    if not args['render_env']:
-        #        envMonitor = wrappers.Monitor(env, args['monitor_dir'], video_callable=False, force=True)
-        #    else:
-        #        envMonitor = wrappers.Monitor(env, args['monitor_dir'], force=True)
 
         # n brains
         if False:
@@ -215,7 +180,7 @@ if __name__ == '__main__':
     parser.add_argument('--gamma', help='discount factor for critic updates', default=0.99)
     parser.add_argument('--tau', help='soft target update parameter', default=0.01)
     parser.add_argument('--buffer-size', help='max size of the replay buffer', default=1000000)
-    parser.add_argument('--minibatch-size', help='size of minibatch for minibatch-SGD', default=64)
+    parser.add_argument('--minibatch-size', help='size of minibatch for minibatch-SGD', default=128)
 
     # run parameters
     #parser.add_argument('--env', help='choose the gym env- tested on {Pendulum-v0}', default='MountainCarContinuous-v0')
@@ -225,9 +190,9 @@ if __name__ == '__main__':
     parser.add_argument('--render-env', help='render the gym env', action='store_true')
     parser.add_argument('--use-gym-monitor', help='record gym results', action='store_true')
     parser.add_argument('--monitor-dir', help='directory for storing gym results', default='./results/videos/video1')
-    parser.add_argument('--summary-dir', help='directory for storing tensorboard info', default='./results/2vs1_ddpg/tfdata/')
-    parser.add_argument('--modelFolder', help='the folder which saved model data', default="./results/2vs1_ddpg/weights/")
-    parser.add_argument('--runTest', help='use saved model to run', default=False)
+    parser.add_argument('--summary-dir', help='directory for storing tensorboard info', default='./results/2vs1_ddpg_tanh/tfdata/')
+    parser.add_argument('--modelFolder', help='the folder which saved model data', default="./results/2vs1_ddpg_tanh/weights/")
+    parser.add_argument('--runTest', help='use saved model to run', default=True)
 
     parser.set_defaults(render_env=False)
     parser.set_defaults(use_gym_monitor=False)

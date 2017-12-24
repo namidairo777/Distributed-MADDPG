@@ -29,11 +29,7 @@ def build_summaries(n):
 	summary_ops = tf.summary.merge_all()
 	return summary_ops, summary_vars
 
-def train(sess,env,args,actors,critics,noise, ave_n,
-          prioritized_replay_alpha=0.6,
-          prioritized_replay_beta0=0.4,
-          prioritized_replay_beta_iters=None,
-          prioritized_replay_eps=1e-6):
+def train(sess,env,args,actors,critics,noise, ave_n):
 
 	summary_ops,summary_vars = build_summaries(env.n)
 	init = tf.global_variables_initializer()
@@ -47,21 +43,10 @@ def train(sess,env,args,actors,critics,noise, ave_n,
 	for actor in actors:
 		actor.update_target()
 	for critic in critics:
-		# callback = TensorBoard(args['summary_dir'])
-		# callback.set_model(critic.mainModel)
-		# callbacks.append(callback)
-
 		critic.update_target()
 	
-	replayMemory = None
-	# prioritized_replay_beta_iters = None
-
-	if args["prioritized"]:		
-		replayMemory = PrioritizedReplayMemory(args['buffer_size'], args["prioritized_alpha"])
-	else:
-		replayMemory = ReplayMemory(int(args['buffer_size']),int(args['random_seed']))
-	# Prioritized Replay
-	# PrioritizedReplayMemory = PrioritizedReplayMemory(args['buffer_size'])
+	
+	replayMemory = ReplayMemory(int(args['buffer_size']),int(args['random_seed']))
 
 	for ep in range(int(args['max_episodes'])):
 
@@ -87,108 +72,92 @@ def train(sess,env,args,actors,critics,noise, ave_n,
 						
 			s2,r,done,_ = env.step(a) # a is a list with each element being an array
 			#replayMemory.add(np.reshape(s,(actor.input_dim,)),np.reshape(a,(actor.output_dim,)),r,done,np.reshape(s2,(actor.input_dim,)))
-			replayMemory.add(s,a,r,done,s2)
-			
-
-			# Prioritized Replay Memory
-			# replayMemory.store(s, a, r, done, s2)
-			# replayMemory.sample(int(args["minibatch_size"]))
-			# update priority with loss 
-
+			replayMemory.add(s,a,r,done,s2)			
 			s = s2
-
 			# MADDPG Adversary Agent			
 			for i in range(ave_n):
-
 				actor = actors[i]
 				critic = critics[i]
-				if replayMemory.size()>int(args['minibatch_size']):
-
-					s_batch,a_batch,r_batch,d_batch,s2_batch, batch_idxes= None, None, None, None, None, None
-					
-					if args["prioritized"]:
-						experience = replayMemory.sample(args['minibatch_size'])
-						(s_batch, a_batch, r_batch, d_batch, s2_batch, batch_idxes) = experience
-					else:
-						s_batch,a_batch,r_batch,d_batch,s2_batch = replayMemory.miniBatch(int(args['minibatch_size']))
-					
+				if replayMemory.size() > int(args['m_size']):
+					s_batch, a_batch, r_batch, d_batch, s2_batch = replayMemory.miniBatch(int(args['m_size']))
 					a = []
 					for j in range(ave_n):
 						state_batch_j = np.asarray([x for x in s_batch[:,j]]) #batch processing will be much more efficient even though reshaping will have to be done
 						a.append(actors[j].predict_target(state_batch_j))
-					#print(np.asarray(a).shape)
 					a_temp = np.transpose(np.asarray(a),(1,0,2))
-					#print("a_for_critic", a_temp.shape)
 					a_for_critic = np.asarray([x.flatten() for x in a_temp])
-					s2_batch_i = np.asarray([x for x in s2_batch[:,i]]) # Checked till this point, should be fine.
-					# print("s2_batch_i", s2_batch_i.shape)
-					targetQ = critic.predict_target(s2_batch_i,a_for_critic) # Should  work, probably
-
+					s2_batch_i = np.asarray([x for x in s2_batch[:,i]]) 
+					targetQ = critic.predict_target(s2_batch_i,a_for_critic)
 					yi = []
-					for k in range(int(args['minibatch_size'])):
+					for k in range(int(args['m_size'])):
 						if d_batch[:,i][k]:
 							yi.append(r_batch[:,i][k])
 						else:
 							yi.append(r_batch[:,i][k] + critic.gamma*targetQ[k])
+					# a2 = actor.predict_target(s_batch)					
+					# Q_target = critic.predict_target(s2_batch, a2)
+					# y = r + gamma * Q_target
+					# TD loss = yi - critic.predict(s_batch, a_batch)				
 					s_batch_i = np.asarray([x for x in s_batch[:,i]])
-					
-					td_errors = critic.train(s_batch_i,np.asarray([x.flatten() for x in a_batch[:, 0: ave_n, :]]),np.asarray(yi))
-					
-					if args["prioritized"]:
-						new_priorities = np.abs(td_errors) + prioritized_replay_eps
-						replayMemory.update_priorities(batch_idxes, new_priorities)
-
+					a_batch_data = np.asarray([x.flatten() for x in a_batch[:, 0: ave_n, :]])
+					target_q = np.asarray(yi)
+					# loss = batch
+					losses = []
+					# clip
+					index = 0
+					# number of losses
+					loss_num = int(int(args['m_size']) / int(args['n_size']))
+					for i in range(loss_num):
+						loss = critic.get_loss(s_batch_i[index:index+int(args["n_size"])], 
+											   a_batch_data[index:index+int(args["n_size"])], 
+											   target_q[index:index+int(args["n_size"])])
+						losses.append(loss)
+						index += int(args["n_size"])
+					# which has max loss
+					sorted_index = np.argsort(losses).tolist()
+					max_index = sorted_index[-1]
+					# clip index
+					head = max_index * int(args["n_size"])
+					tail = head + int(args["n_size"])
+					# clipped batch data with higher losses
+					prioritized_a_batch = a_batch_data[head: tail] 
+					prioritized_s_batch = s_batch_i[head: tail] 
+					prioritized_target_q = target_q[head: tail]
+					# critic train
+					critic.train(prioritized_s_batch, prioritized_a_batch, prioritized_target_q)
 					actions_pred = []
 					# for j in range(ave_n):
 					for j in range(ave_n):
 						state_batch_j = np.asarray([x for x in  s2_batch[:,j]])
-						actions_pred.append(actors[j].predict(state_batch_j)) # Should work till here, roughly, probably
-
+						actions_pred.append(actors[j].predict(state_batch_j[head: tail])) 
 					a_temp = np.transpose(np.asarray(actions_pred),(1,0,2))
 					a_for_critic_pred = np.asarray([x.flatten() for x in a_temp])
-					s_batch_i = np.asarray([x for x in s_batch[:,i]])
-					grads = critic.action_gradients(s_batch_i,a_for_critic_pred)[:,action_dims_done:action_dims_done + actor.action_dim]
-					actor.train(s_batch_i,grads)
-
+					grads = critic.action_gradients(prioritized_s_batch, a_for_critic_pred)[:,action_dims_done:action_dims_done + actor.action_dim]
+					# actor train
+					actor.train(prioritized_s_batch, grads)
 				action_dims_done = action_dims_done + actor.action_dim
-
-			# Only DDPG agent
-			
+			# Only DDPG agent			
 			for i in range(ave_n, env.n):
 				actor = actors[i]
 				critic = critics[i]
 				if replayMemory.size() > int(args["minibatch_size"]):
-					s_batch, a_batch, r_batch, d_batch, s2_batch = replayMemory.miniBatch(int(args["minibatch_size"]))
-									
+					s_batch, a_batch, r_batch, d_batch, s2_batch = replayMemory.miniBatch(int(args["minibatch_size"]))									
 					s_batch_i = np.asarray([x for x in s_batch[:,i]])
-
 					action = np.asarray(actor.predict_target(s_batch_i))
-
 					action_for_critic = np.asarray([x.flatten() for x in action])
-
 					s2_batch_i = np.asarray([x for x in s2_batch[:, i]])
-
-					# critic.predict_target(next state batch, actor_target(next state batch))
 					targetQ = critic.predict_target(s2_batch_i, action_for_critic)
-
 					y_i = []
 					for k in range(int(args['minibatch_size'])):
-						# If ep is end
 						if d_batch[:, i][k]:
 							y_i.append(r_batch[:, i][k])
 						else:
 							y_i.append(r_batch[:, i][k] + critic.gamma * targetQ[k])
-					# state batch for agent i
 					s_batch_i= np.asarray([x for x in s_batch[:, i]])
-
 					critic.train(s_batch_i, np.asarray([x.flatten() for x in a_batch[:, i]]), np.asarray(y_i))
-
 					action_for_critic_pred = actor.predict(s2_batch_i)
-
 					gradients = critic.action_gradients(s_batch_i, action_for_critic_pred)[:, :]
-
-					actor.train(s_batch_i, gradients)
-			
+					actor.train(s_batch_i, gradients)			
 			for i in range(0, env.n):
 				actor = actors[i]
 				critic = critics[i]
@@ -202,7 +171,7 @@ def train(sess,env,args,actors,critics,noise, ave_n,
 				ave_reward = 0.0
 				good_reward = 0.0
 				for i in range(env.n):
-					if i < ave_n - 1:
+					if i < ave_n:
 						ave_reward += episode_reward[i]
 					else:
 						good_reward += episode_reward[i]
@@ -237,8 +206,6 @@ def train(sess,env,args,actors,critics,noise, ave_n,
 				saveWeights(actors[i], i, directory)
 			print("Model weights saved to folder")
 
-
-		# print("Cost Time: ", int(time.time() - start), "s")
 
 
 def saveModel(actor, i, pathToSave):

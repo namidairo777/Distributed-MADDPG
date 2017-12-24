@@ -130,12 +130,15 @@ def train(sess,env,args,actors,critics,noise, ave_n):
 				
 				ave_reward = 0.0
 				good_reward = 0.0
+				"""
 				for i in range(env.n):
 					if i < ave_n:
 						ave_reward += episode_reward[i]
 					else:
 						good_reward += episode_reward[i]
-				
+				"""
+				ave_reward = episode_reward[0]
+				good_reward = episode_reward[2]	
 				#summary_str = sess.run(summary_ops, feed_dict = {summary_vars[0]: episode_reward, summary_vars[1]: episode_av_max_q/float(stp)})
 				summary_str = sess.run(summary_ops, feed_dict = {summary_vars[0]: ave_reward, summary_vars[1]: good_reward})
 				# summary_str = sess.run(summary_ops, feed_dict = {summary_vars[i]: losses[i] for i in range(len(losses))})

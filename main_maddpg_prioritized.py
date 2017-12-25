@@ -9,7 +9,7 @@ import argparse
 from keras.models import load_model
 import os
 import tensorflow as tf
-
+import time
 
 def main(args):
     if not os.path.exists(args["modelFolder"]):
@@ -73,6 +73,69 @@ def main(args):
 
         train(sess,env,args,actors,critics,exploration_noise, ave_n)
 
+def test(args):
+    # env and random seed
+    env = make_env.make_env('simple_tag')
+    np.random.seed(int(args['random_seed']))
+    tf.set_random_seed(int(args['random_seed']))
+    # env.seed(int(args['random_seed']))
+    # tensorflow
+    gpu_options = tf.GPUOptions(per_process_gpu_memory_fraction=0.3)
+    # config=tf.ConfigProto(gpu_options=gpu_options, log_device_placement=False)
+    with tf.Session() as sess:
+        # agent number
+        n = env.n
+        ave_n = 0
+        good_n = 0
+        for i in env.agents:
+            if i.adversary:
+                ave_n += 1
+            else:
+                good_n += 1
+        # Actor Critic
+        n = env.n
+        actors = []
+        critics = []
+        exploration_noise = []
+        observation_dim = []
+        action_dim = []
+        total_action_dim = 0
+
+        for i in range(ave_n):
+            total_action_dim = total_action_dim + env.action_space[i].n
+        for i in range(n):
+            observation_dim.append(env.observation_space[i].shape[0])
+            action_dim.append(env.action_space[i].n) # assuming discrete action space here -> otherwise change to something like env.action_space[i].shape[0]
+            actors.append(ActorNetwork(sess,observation_dim[i],action_dim[i],float(args['actor_lr']),float(args['tau'])))
+            if i < ave_n:
+                # MADDPG - centralized Critic
+                critics.append(CriticNetwork(sess,n,observation_dim[i],total_action_dim,float(args['critic_lr']),float(args['tau']),float(args['gamma'])))
+            else:
+                # DDPG
+                critics.append(CriticNetwork(sess,n,observation_dim[i],action_dim[i],float(args['critic_lr']),float(args['tau']),float(args['gamma'])))        
+            exploration_noise.append(OUNoise(mu = np.zeros(action_dim[i])))
+        for i in range(n):
+            actors[i].mainModel.load_weights(args["modelFolder"] + str(i)+'_weights'+'.h5')  
+        for ep in range(10):
+            s = env.reset()
+            reward = 0.0
+            for step in range(200):
+                time.sleep(0.03)
+                env.render()
+                actions = []
+                for i in range(env.n):
+                    state_input = np.reshape(s[i],(-1,env.observation_space[i].shape[0]))
+                    noise = OUNoise(mu = np.zeros(5))                    
+                    actions.append((actors[i].predict(np.reshape(s[i],(-1, actors[i].mainModel.input_shape[1])))).reshape(actors[i].mainModel.output_shape[1],))
+                s, r, d, s2 = env.step(actions)
+                for i in range(env.n):
+                    reward += r[i]
+                if np.all(d):
+                    break
+            print("Episode: {:d}  | Reward: {:f}".format(ep, reward))
+        env.close()
+        import sys
+        sys.exit("test over!")
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='provide arguments for DDPG agent')
@@ -95,7 +158,7 @@ if __name__ == '__main__':
     parser.add_argument('--monitor-dir', help='directory for storing gym results', default='./results/videos/video1')
     parser.add_argument('--summary-dir', help='directory for storing tensorboard info', default='./results/4vs2_maddpg_tanh/tfdata/')
     parser.add_argument('--modelFolder', help='the folder which saved model data', default="./results/4vs2_maddpg_tanh/weights/")
-    parser.add_argument('--runTest', help='use saved model to run', default=False)
+    parser.add_argument('--runTest', help='use saved model to run', default=True)
     parser.add_argument('--m-size', help='M size', default=128)
     parser.add_argument('--n-size', help='N size', default=64)
 
@@ -104,7 +167,12 @@ if __name__ == '__main__':
 
     args = vars(parser.parse_args())
 
-    main(args)
+    if args["runTest"]:
+        print("Test!")
+        test(args)
+    else:
+        print("Train!")
+        main(args)
 
 
 

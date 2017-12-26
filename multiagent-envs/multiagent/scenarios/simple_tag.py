@@ -8,8 +8,8 @@ class Scenario(BaseScenario):
         world = World()
         # set any world properties first
         world.dim_c = 2
-        num_good_agents = 2
-        num_adversaries = 4
+        num_good_agents = 1
+        num_adversaries = 2
         num_agents = num_adversaries + num_good_agents
         num_landmarks = 1
         num_borders = 80 # (20 * 4)

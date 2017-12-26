@@ -92,10 +92,10 @@ RL could be described as a Markov Decision Process (MDP). In this work, I extend
 \begin{itemize}
   \item $N$ Agents, $N \in \mathbb{R}$
   \item A set of private observations $O$ from state. 
-  \item A set of observations {${o_1, o_2,\ldots, o_i\ldots, o_n}$} $\subseteq O$ which describes each agent's private observation.
-  \item A set of actions {${a_1, a_2,\ldots, a_i,\ldots, a_n}$} $\subseteq A$.
-  \item A set of rewards {${r_1, r_2,\ldots, r_i,\ldots, r_n}$} $\subseteq R$, agents recieves rewards from environment after execution actions.
-  \item Policy $\pi_i$ of agent $i$: \[\pi_i: O \rightarrow A\] which maps one observation to one action.
+  \item A set of observations \{${o_1, o_2,\ldots, o_i\ldots, o_n}$\} $\subseteq O$ which describes each agent's private observation.
+  \item A set of actions \{${a_1, a_2,\ldots, a_i,\ldots, a_n}$\} $\subseteq A$.
+  \item A set of rewards \{${r_1, r_2,\ldots, r_i,\ldots, r_n}$\} $\subseteq R$, agents recieves rewards from environment after execution actions.
+  \item Policy $\pi_i$ of agent $i$: $\pi_i: O \rightarrow A$ which maps one observation to one action.
 \end{itemize}
 The return from start of agent $i$ is defined as the sum of futuren reward which could be represented as, 
 $$ R_i = \sum_{t=0}^{T}(\gamma^t r^{t}_i) $$
@@ -229,15 +229,15 @@ We have discussed in previous sections that traditional reinforcement learning m
 
 Recently, OpenAI rleased a method which extends traditional DDPG method to multi-agent domain \cite{maddpg}. As we know, single-agent algorithm failed because while agent is updating policy, the environment becomes non-stationary which turns out to failure of convergence. Multi-Agent DDPG, in Figure \label{fig:maddpg} found a centralized way to put other agents's actions into consideration in critic.
 \begin{equation}
-L(\theta_i) = E_{s,a,r,s'}[(Q(s, a_1, a_2 ... a_n) - y)^2],  
+L(\theta_i) = E_{s,a,r,s'}[y - Q(s, a_1, a_2 ... a_n)],  
 \end{equation}
 $$where\ y = r_i + \gamma{Q_i}(s', a_1', a_2' ... a_n') | _{a_j'=\mu_j'(o_j)}$$
 
-MADDPG is a great algorithm which uses centrilized critic to include other agents' actions, it turns out to a stable learning method compared with traditional RL methods. \par
+MADDPG is a great algorithm which uses centrilized critic to take other agents' actions into consideration, it turns out to be a stable learning method compared with traditional RL methods. \par
 
-MADDPG is still using experience replay, the idea from DDPG, to stablize the learning process. Experience replay \cite{replay} memory can store transitions of the form $(s,a,r,s')$, and agent can sample batches to do updates. The sampling process breaks the correlation between transitions and improves learning's stability. \par
+MADDPG still uses experience replay, which is same as in DDPG, to stablize the learning process. Experience replay \cite{replay} memory can store transitions of the form $(s,a,r,s')$, and agent can sample batches to do updates. The sampling process breaks the correlation between transitions and improves learning's stability. \par
 
-However, multi-agent setting has tremendous situations comparing with single-agent setting, the experiment replay memory from single multi-agent system may seems not enough for learning. Also, different batches from sampling could have a totally different effect on learning, which means it will be great for us to select good batches for updates to accelerate and improve learning process. \par
+However, multi-agent setting has tremendous situations comparing with single-agent setting, the experiment replay memory from single multi-agent system may seem not enough for learning. Also, different batches from sampling could have a totally different effect on learning, which means it will be great for us to select good batches for updates to accelerate and improve learning process. \par
 
 In this work, I present a distributed multi-worker architecture for batch data collection and a sellection method for prioritized batch data.
 
@@ -258,6 +258,7 @@ For example, $M = 256$ and $N = 64$, we first sample $256$ batches from experien
 
 \section{Experiments}
 In this section, we will introduce the experiment environment we use and several experiments we carried to verify the superiority of our proposed method.
+
 \subsection{Experiment Environment}
 To perform our experiments, we adopt the multiagent-particle-envs used in \cite{maddpg}, which consists of $N$ agents and $L$ landmarks inhabiting a two-dimensional world with continunous observation space and continunous action space. There are several types of environment it provides with. We focus on multi-agent cooperation for chasing target, so we adopt Predator-Prey environment.\par
 In this Predator-Prey environment, $N$ slower cooperating agents try to chase the faster target which could flee away from chasers around a randomly generated environment with $L$ large landmarks served as obstacles to blcok the way. Each time agents collide with a target, the agens are rewarded while the target is penalized. \par

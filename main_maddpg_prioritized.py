@@ -156,9 +156,9 @@ if __name__ == '__main__':
     parser.add_argument('--render-env', help='render the gym env', action='store_true')
     parser.add_argument('--use-gym-monitor', help='record gym results', action='store_true')
     parser.add_argument('--monitor-dir', help='directory for storing gym results', default='./results/videos/video1')
-    parser.add_argument('--summary-dir', help='directory for storing tensorboard info', default='./results/4vs2_maddpg_tanh/tfdata/')
-    parser.add_argument('--modelFolder', help='the folder which saved model data', default="./results/4vs2_maddpg_tanh/weights/")
-    parser.add_argument('--runTest', help='use saved model to run', default=True)
+    parser.add_argument('--summary-dir', help='directory for storing tensorboard info', default='./results/2vs1_maddpg_tanh/tfdata_test/')
+    parser.add_argument('--modelFolder', help='the folder which saved model data', default="./results/2vs1_maddpg_tanh/weights_test/")
+    parser.add_argument('--runTest', help='use saved model to run', default=False)
     parser.add_argument('--m-size', help='M size', default=128)
     parser.add_argument('--n-size', help='N size', default=64)
 

@@ -53,11 +53,11 @@ def test(args):
                 critics.append(CriticNetwork(sess,n,observation_dim[i],action_dim[i],float(args['critic_lr']),float(args['tau']),float(args['gamma'])))        
             exploration_noise.append(OUNoise(mu = np.zeros(action_dim[i])))
          
-
-        for ep in range(200, 4800, 600):
-            for i in range(n):
-                actors[i].mainModel.load_weights(args["modelFolder"] + "ep" + str(ep) + "/" + str(i)+'_weights'+'.h5')
+        for i in range(n):
+            actors[i].mainModel.load_weights(args["modelFolder"] + "ep200"  + "/" + str(i)+'_weights'+'.h5')
     
+        for ep in range(10):
+            
             s = env.reset()
             reward = 0.0
             for step in range(200):

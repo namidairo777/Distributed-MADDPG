@@ -24,6 +24,7 @@ def prioritized_batch(replay, critics, m_size, n_size):
     4. select n_size td loss with higher td loss
     5. use it for 
     """
+
     s_batch,a_batch,r_batch,d_batch,s2_batch = replayMemory.miniBatch(m_size)
            
 def build_summaries(n):
@@ -49,7 +50,7 @@ def showReward(episode_reward, n, ep, start):
         reward_string += " {:5.2f} ".format(re)
     print ('|Episode: {:4d} | Time: {:2d} | Rewards: {:s}'.format(ep, int(time.time() - start), reward_string))
 
-def distributed_train(sess, env, args, actors, critics, noise, ave_n):
+def distributed_train_every_step(sess, env, args, actors, critics, noise, ave_n):
     """
     1. replay memory
         - for each timestep
@@ -60,14 +61,18 @@ def distributed_train(sess, env, args, actors, critics, noise, ave_n):
     writer = tf.summary.FileWriter(args['summary_dir'], sess.graph)
     replayMemory = ReplayMemory(int(args['buffer_size']),int(args['random_seed']))
 
+    # split_dis = int(int(args['max_episode_len']) / size)
+    # batch_index_count = split_dis
+
     start_time = 0.0
     end_time = 0.0
 
     for ep in range(int(args['max_episodes'])):
         # collecting reward 
+        #batch_index_count = split_dis
         s = env.reset()
         episode_reward = np.zeros((env.n,))
-
+        # weights_data = []
         start = time.time()
 
         for step in range(int(args['max_episode_len'])):
@@ -78,8 +83,18 @@ def distributed_train(sess, env, args, actors, critics, noise, ave_n):
                 state_input = np.reshape(s[i],(-1, actor.state_dim))
                 a.append(actor.act(state_input, noise[i]()).reshape(actor.action_dim,))
             s2, r, done, _ = env.step(a) # a is a list with each element being an array
+            #if ep % 10 == 0: 
+            #    env.render()
+            replayMemory.add(s, a, r, done, s2)
             episode_reward += r
+            s = s2
             if replayMemory.size() > int(args["minibatch_size"]):
+
+                # send weights to workers
+                critic_weights = [critic.mainModel.get_weights() for critic in critics]
+                for i in range(1, size):
+                    comm.send(critic_weights, dest=i, tag=9)
+                
                 # MADDPG Adversary Agent            
                 for i in range(ave_n):
                     actor = actors[i]
@@ -116,18 +131,27 @@ def distributed_train(sess, env, args, actors, critics, noise, ave_n):
                         index = 0
                         # number of losses
                         loss_num = int(int(args['m_size']) / int(args['n_size']))
+
+
+                        # send batch data to workers
                         for i in range(loss_num):
-                            loss = critic.get_loss(s_batch_i[index:index+int(args["n_size"])], 
+                            data = (s_batch_i[index:index+int(args["n_size"])], 
                                                    a_batch_data[index:index+int(args["n_size"])], 
                                                    target_q[index:index+int(args["n_size"])])
-                            losses.append(loss)
+                            comm.send(data, dest=i+1, tag=9)
+
                             index += int(args["n_size"])
+                        
+                        # recieve loss from workers
+                        for i in range(loss_num):
+                            losses.append(comm.recv(source=i+1, tag=9))
+
                         # which has max loss
                         sorted_index = np.argsort(losses).tolist()
                         max_index = sorted_index[-1]
                         # clip index
                         head = max_index * int(args["n_size"])
-                        tail = head + int(args["n_size"])
+                        tail = head +  (args["n_size"])
                         # clipped batch data with higher losses
                         prioritized_a_batch = a_batch_data[head: tail] 
                         prioritized_s_batch = s_batch_i[head: tail] 
@@ -148,6 +172,8 @@ def distributed_train(sess, env, args, actors, critics, noise, ave_n):
                         # actor train
                         actor.train(prioritized_s_batch, grads)
                     action_dims_done = action_dims_done + actor.action_dim
+
+            if replayMemory.size() > int(args["minibatch_size"]):
                 # Only DDPG agent           
                 for i in range(ave_n, env.n):
                     actor = actors[i]
@@ -176,199 +202,6 @@ def distributed_train(sess, env, args, actors, critics, noise, ave_n):
                     actor.update_target()
                     critic.update_target()
 
-            if step == int(args["max_episode_len"])-1 or np.all(done):
-                #############################################
-                ##   Record reward data into tensorboard
-                #############################################
-                ave_reward = 0.0
-                good_reward = 0.0
-                for i in range(env.n):
-                    if i < ave_n:
-                        ave_reward += episode_reward[i]
-                    else:
-                        good_reward += episode_reward[i]
-                #summary_str = sess.run(summary_ops, feed_dict = {summary_vars[0]: episode_reward, summary_vars[1]: episode_av_max_q/float(stp)})
-                summary_str = sess.run(summary_ops, feed_dict = {summary_vars[0]: ave_reward, summary_vars[1]: good_reward})
-                # summary_str = sess.run(summary_ops, feed_dict = {summary_vars[i]: losses[i] for i in range(len(losses))})
-                writer.add_summary(summary_str, ep)
-                writer.flush()
-                showReward(episode_reward, env.n, ep, start)
-                break
-
-        if ep % 50 == 0 and ep != 0:
-            print("Starting saving model weights every 50 episodes")
-            for i in range(env.n):
-                saveWeights(actors[i], i, args["modelFolder"])
-            print("Model weights saved")
-        if ep % 100 == 0 and ep != 0:
-            directory = args["modelFolder"] + "ep" + str(ep) + "/"
-            if not os.path.exists(directory):
-                os.makedirs(directory)
-            print("Starting saving model weights to folder every 100 episodes")
-            for i in range(env.n):
-                saveWeights(actors[i], i, directory)
-            print("Model weights saved to folder")            
-
-        # recieve batch data from workers
-        batch_data = [comm.recv(source=i, tag=i) for i in range(1, size)]
-        for batch in batch_data:
-            for item in batch:
-                (s, a, r, d, s2) = item
-            replayMemory.add(s, a, r, d, s2)
-        # send weights to workers
-        actor_weights = [actor.mainModel.get_weights() for actor in actors]
-        for i in range(1, size):
-            comm.send(actor_weights, dest=i, tag=i)
-
-def distributed_train_every_step(sess, env, args, actors, critics, noise, ave_n):
-    """
-    1. replay memory
-        - for each timestep
-        2. async batch data 
-        3. 
-    """
-    summary_ops,summary_vars = build_summaries(env.n)
-    writer = tf.summary.FileWriter(args['summary_dir'], sess.graph)
-    replayMemory_predator = ReplayMemory(int(args['buffer_size']),int(args['random_seed']))
-    replayMemory_prey = ReplayMemory(int(args['buffer_size']),int(args['random_seed']))
-
-    # split_dis = int(int(args['max_episode_len']) / size)
-    # batch_index_count = split_dis
-
-    start_time = 0.0
-    end_time = 0.0
-
-    for ep in range(int(args['max_episodes'])):
-        # collecting reward 
-        #batch_index_count = split_dis
-        s = env.reset()
-        episode_reward = np.zeros((env.n,))
-        # weights_data = []
-        start = time.time()
-
-        for step in range(int(args['max_episode_len'])):
-            action_dims_done = 0
-            a = []
-            for i in range(env.n):
-                actor = actors[i]
-                state_input = np.reshape(s[i],(-1, actor.state_dim))
-                a.append(actor.act(state_input, noise[i]()).reshape(actor.action_dim,))
-            s2, r, done, _ = env.step(a) # a is a list with each element being an array
-            s = s2
-            #if ep % 10 == 0: 
-            #    env.render()
-            replayMemory_predator.add(s, a, r, done, s2)
-            replayMemory_prey.add(s, a, r, done, s2)
-            episode_reward += r
-            if replayMemory_predator.size() > int(args["minibatch_size"]):
-                # MADDPG Adversary Agent            
-                for i in range(ave_n):
-                    actor = actors[i]
-                    critic = critics[i]
-                    if replayMemory_predator.size() > int(args['m_size']):
-                        s_batch, a_batch, r_batch, d_batch, s2_batch = replayMemory_predator.miniBatch(int(args['m_size']))
-                        a = []
-                        for j in range(ave_n):
-                            state_batch_j = np.asarray([x for x in s_batch[:,j]]) #batch processing will be much more efficient even though reshaping will have to be done
-                            a.append(actors[j].predict_target(state_batch_j))
-                        a_temp = np.transpose(np.asarray(a),(1,0,2))
-                        a_for_critic = np.asarray([x.flatten() for x in a_temp])
-                        s2_batch_i = np.asarray([x for x in s2_batch[:,i]]) 
-                        targetQ = critic.predict_target(s2_batch_i,a_for_critic)
-                        yi = []
-                        for k in range(int(args['m_size'])):
-                            if d_batch[:,i][k]:
-                                yi.append(r_batch[:,i][k])
-                            else:
-                                yi.append(r_batch[:,i][k] + critic.gamma*targetQ[k])
-                        # a2 = actor.predict_target(s_batch)                    
-                        # Q_target = critic.predict_target(s2_batch, a2)
-                        # y = r + gamma * Q_target
-                        # TD loss = yi - critic.predict(s_batch, a_batch)               
-                        s_batch_i = np.asarray([x for x in s_batch[:,i]])
-                        a_batch_data = np.asarray([x.flatten() for x in a_batch[:, 0: ave_n, :]])
-                        target_q = np.asarray(yi)
-                        #############################################
-                        ##   prioritized_batch
-                        #############################################
-                        # loss = batch
-                        losses = []
-                        # clip
-                        index = 0
-                        # number of losses
-                        loss_num = int(int(args['m_size']) / int(args['n_size']))
-                        for i in range(loss_num):
-                            loss = critic.get_loss(s_batch_i[index:index+int(args["n_size"])], 
-                                                   a_batch_data[index:index+int(args["n_size"])], 
-                                                   target_q[index:index+int(args["n_size"])])
-                            losses.append(loss)
-                            index += int(args["n_size"])
-                        # which has max loss
-                        sorted_index = np.argsort(losses).tolist()
-                        max_index = sorted_index[-1]
-                        # clip index
-                        head = max_index * int(args["n_size"])
-                        tail = head +  (args["n_size"])
-                        # clipped batch data with higher losses
-                        prioritized_a_batch = a_batch_data[head: tail] 
-                        prioritized_s_batch = s_batch_i[head: tail] 
-                        prioritized_target_q = target_q[head: tail]
-                        #############################################
-                        ##   prioritized_batch
-                        #############################################
-                        # critic train
-                        critic.train(prioritized_s_batch, prioritized_a_batch, prioritized_target_q)
-                        actions_pred = []
-                        # for j in range(ave_n):
-                        for j in range(ave_n):
-                            state_batch_j = np.asarray([x for x in  s2_batch[:,j]])
-                            actions_pred.append(actors[j].predict(state_batch_j[head: tail])) 
-                        a_temp = np.transpose(np.asarray(actions_pred),(1,0,2))
-                        a_for_critic_pred = np.asarray([x.flatten() for x in a_temp])
-                        grads = critic.action_gradients(prioritized_s_batch, a_for_critic_pred)[:,action_dims_done:action_dims_done + actor.action_dim]
-                        # actor train
-                        actor.train(prioritized_s_batch, grads)
-                    action_dims_done = action_dims_done + actor.action_dim
-
-            if replayMemory_prey.size() > int(args["minibatch_size"]):
-                # Only DDPG agent           
-                for i in range(ave_n, env.n):
-                    actor = actors[i]
-                    critic = critics[i]
-                    if replayMemory_prey.size() > int(args["minibatch_size"]):
-                        s_batch, a_batch, r_batch, d_batch, s2_batch = replayMemory_prey.miniBatch(int(args["minibatch_size"]))                                  
-                        s_batch_i = np.asarray([x for x in s_batch[:,i]])
-                        action = np.asarray(actor.predict_target(s_batch_i))
-                        action_for_critic = np.asarray([x.flatten() for x in action])
-                        s2_batch_i = np.asarray([x for x in s2_batch[:, i]])
-                        targetQ = critic.predict_target(s2_batch_i, action_for_critic)
-                        y_i = []
-                        for k in range(int(args['minibatch_size'])):
-                            if d_batch[:, i][k]:
-                                y_i.append(r_batch[:, i][k])
-                            else:
-                                y_i.append(r_batch[:, i][k] + critic.gamma * targetQ[k])
-                        s_batch_i= np.asarray([x for x in s_batch[:, i]])
-                        critic.train(s_batch_i, np.asarray([x.flatten() for x in a_batch[:, i]]), np.asarray(y_i))
-                        action_for_critic_pred = actor.predict(s2_batch_i)
-                        gradients = critic.action_gradients(s_batch_i, action_for_critic_pred)[:, :]
-                        actor.train(s_batch_i, gradients)                     
-                for i in range(0, env.n):
-                    actor = actors[i]
-                    critic = critics[i]
-                    actor.update_target()
-                    critic.update_target()
-
-            # recieve batch data from workers
-            batch_data = [comm.recv(source=i, tag=i) for i in range(1, size)]
-            for batch in batch_data:
-                for item in batch:
-                    (s, a, r, d, s2) = item
-                replayMemory_predator.add(s, a, r, d, s2)
-            # send weights to workers
-            actor_weights = [actor.mainModel.get_weights() for actor in actors]
-            for i in range(1, size):
-                comm.send(actor_weights, dest=i, tag=i)
 
             if step == int(args["max_episode_len"])-1 or np.all(done):
                 #############################################
@@ -405,30 +238,23 @@ def distributed_train_every_step(sess, env, args, actors, critics, noise, ave_n)
 
 
 
-def collect_batch(env, args, actors, noise, ave_n):
-   
+def collect_batch(env, args, critics, ave_n):
+    
     for ep in range(int(args['max_episodes']) * int(args['max_episode_len'])):
-        
-        # collect batch data
-        s = env.reset()
-        batch_data = []
-        for step in range(int(args['work_max_step'])):
-            
-            actions = []    
-            for i in range(env.n):
-                state_input = np.reshape(s[i], (-1, actors[i].state_dim))
-                actions.append(actors[i].act(state_input, noise[i]()).reshape(actors[i].action_dim,)) 
-            s2, r, done, _ = env.step(actions)
-            # env.render()
-            batch_data.append((s, actions, r, done, s2))
-            s = s2
+        # recieve weights
+        weights = comm.recv(source=0, tag=9)
+     
+        # set weights
+        for i in range(len(critics)):
+            critics[i].mainModel.set_weights(weights[i])
 
-        # send batch data
-        comm.send(batch_data, dest=0, tag=rank)   # recieve batch data
-        # recieve weights and update network
-        weights = comm.recv(source=0, tag=rank)
-        for i in range(len(actors)):
-            actors[i].mainModel.set_weights(weights[i])
+        # receieve batch data for every predator agent to calculate loss
+        for i in range(ave_n):
+            # recieve data from i agent 
+            (s_batch, a_batch, target_q) = comm.recv(source=0, tag=9)
+            loss = critics[i].get_loss(s_batch, a_batch, target_q)
+            # send loss
+            comm.send(loss, dest=0, tag=9)
 
 def main(args):
     # Master
@@ -515,17 +341,17 @@ def main(args):
                     good_n += 1
             # Actor Critic
             n = env.n
-            actors = []
-            exploration_noise = []
+            critics = []
             observation_dim = []
-            action_dim = []
-
-            for i in range(n):
+            total_action_dim = 0
+            # Aversary Agents action spaces
+            for i in range(ave_n):
+                total_action_dim = total_action_dim + env.action_space[i].n
+            for i in range(ave_n):
                 observation_dim.append(env.observation_space[i].shape[0])
-                action_dim.append(env.action_space[i].n)
-                actors.append(ActorNetwork(sess,observation_dim[i],action_dim[i],float(args['actor_lr']),float(args['tau'])))
-                exploration_noise.append(OUNoise(mu = np.zeros(action_dim[i])))
-            collect_batch(env, args, actors, exploration_noise, ave_n)
+                critics.append(CriticNetwork(sess, n, observation_dim[i], total_action_dim, float(args['critic_lr']), float(args['tau']), float(args['gamma'])))
+ 
+            collect_batch(env, args, critics, ave_n)
 
 if __name__ == '__main__':
 
@@ -550,10 +376,10 @@ if __name__ == '__main__':
     parser.add_argument('--render-env', help='render the gym env', action='store_true')
     parser.add_argument('--use-gym-monitor', help='record gym results', action='store_true')
     parser.add_argument('--monitor-dir', help='directory for storing gym results', default='./results/videos/video1')
-    parser.add_argument('--summary-dir', help='directory for storing tensorboard info', default='./results/2vs1_dis_prioritizedBatch/tfdata_step/')
-    parser.add_argument('--modelFolder', help='the folder which saved model data', default="./results/2vs1_dis_prioritizedBatch/weights_step/")
+    parser.add_argument('--summary-dir', help='directory for storing tensorboard info', default='./results/2vs1_dis_prioritizedBatch/tfdata_critic_worker/')
+    parser.add_argument('--modelFolder', help='the folder which saved model data', default="./results/2vs1_dis_prioritizedBatch/weights_critic_worker/")
     parser.add_argument('--runTest', help='use saved model to run', default=False)
-    parser.add_argument('--work-max-step', help='work_max_step', default=5)
+    parser.add_argument('--work-max-step', help='work_max_step', default=1)
     parser.add_argument('--m-size', help='M size', default=128)
     parser.add_argument('--n-size', help='N size', default=64)
 

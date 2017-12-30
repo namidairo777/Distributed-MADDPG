@@ -45,6 +45,10 @@ def train(sess,env,args,actors,critics,noise, ave_n):
 	for critic in critics:
 		critic.update_target()
 	
+	#for i in range(20):
+	#		print([noise[i]()for i in range(env.n)])
+
+
 	
 	replayMemory = ReplayMemory(int(args['buffer_size']),int(args['random_seed']))
 
@@ -69,9 +73,12 @@ def train(sess,env,args,actors,critics,noise, ave_n):
 				actor = actors[i]
 				state_input = np.reshape(s[i],(-1,actor.state_dim))
 				a.append(actor.act(state_input, noise[i]()).reshape(actor.action_dim,))
-						
+			# print(a)
+			#time.sleep(10)
 			s2,r,done,_ = env.step(a) # a is a list with each element being an array
 			#replayMemory.add(np.reshape(s,(actor.input_dim,)),np.reshape(a,(actor.output_dim,)),r,done,np.reshape(s2,(actor.input_dim,)))
+			if ep % 50 == 0:
+				env.render()
 			replayMemory.add(s,a,r,done,s2)			
 			s = s2
 			# MADDPG Adversary Agent			
@@ -94,7 +101,7 @@ def train(sess,env,args,actors,critics,noise, ave_n):
 							yi.append(r_batch[:,i][k])
 						else:
 							yi.append(r_batch[:,i][k] + critic.gamma*targetQ[k])
-					# a2 = actor.predict_target(s_batch)					
+					# a2 = actor.predict_target(s_batch)
 					# Q_target = critic.predict_target(s2_batch, a2)
 					# y = r + gamma * Q_target
 					# TD loss = yi - critic.predict(s_batch, a_batch)				

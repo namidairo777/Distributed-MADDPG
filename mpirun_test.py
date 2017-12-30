@@ -56,7 +56,7 @@ def test(args):
                 critics.append(CriticNetwork(sess,n,observation_dim[i],action_dim[i],float(args['critic_lr']),float(args['tau']),float(args['gamma'])))        
             exploration_noise.append(OUNoise(mu = np.zeros(action_dim[i])))
         for i in range(n):
-            actors[i].mainModel.load_weights(args["modelFolder"] + str(i)+'_weights'+'.h5')  
+            actors[i].mainModel.load_weights(args["modelFolder"] + str(i)+'_weights'+'.h5')   #"ep200/" + 
         for ep in range(10):
             s = env.reset()
             reward = 0.0
@@ -90,7 +90,7 @@ if __name__ == '__main__':
     parser.add_argument('--tau', help='soft target update parameter', default=0.01)
     parser.add_argument('--buffer-size', help='max size of the replay buffer', default=1000000)
     parser.add_argument('--prioritized-alpha', help='prioritized alpha', default=0.6)
-    parser.add_argument('--minibatch-size', help='size of minibatch for minibatch-SGD', default=64)
+    parser.add_argument('--minibatch-size', help='size of minibatch for minibatch-SGD', default=128)
 
     # run parameters
     #parser.add_argument('--env', help='choose the gym env- tested on {Pendulum-v0}', default='MountainCarContinuous-v0')
@@ -101,10 +101,10 @@ if __name__ == '__main__':
     parser.add_argument('--use-gym-monitor', help='record gym results', action='store_true')
     parser.add_argument('--monitor-dir', help='directory for storing gym results', default='./results/videos/video1')
     parser.add_argument('--summary-dir', help='directory for storing tensorboard info', default='./results/2vs1_dis_prioritizedBatch/tfdata/')
-    parser.add_argument('--modelFolder', help='the folder which saved model data', default="./results/2vs1_dis_prioritizedBatch/weights_split/")
+    parser.add_argument('--modelFolder', help='the folder which saved model data', default="./results/2vs1_dis_prioritizedBatch/weights_critic_worker/") #2vs1_dis_prioritizedBatch/weights_critic_worker/ 2vs1_maddpg_tanh/weights_prioritized/
     parser.add_argument('--runTest', help='use saved model to run', default=False)
     parser.add_argument('--work-max-step', help='work_max_step', default=50)
-    parser.add_argument('--m-size', help='M size', default=256)
+    parser.add_argument('--m-size', help='M size', default=128)
     parser.add_argument('--n-size', help='N size', default=64)
 
     parser.set_defaults(render_env=False)

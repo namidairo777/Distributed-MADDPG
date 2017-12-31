@@ -41,7 +41,7 @@ Supervised by: & Nobuhara Hajime, Yasushi Nakauchi and Junichi Hoshino (Division
 Research of Moving Target Search is ongoing recent years. There are some researches according to the problem of Multi-Agent pursuing a moving target, but few of them could be applied to real world. This research focused on this problem and proposed a speed-up method for real-time grid environment based on Cover Heuristic method. We use Map Abstraction to build map hierarchy which helps us do faster map search compared to previous method. Refinement is used for highly-abstracted route refining to successor original map. Finally, evaluation experiments are based on Benchmark maps and the result showed high efficiency of our proposed method.
 }
 
-\keywords{keyword-1, keyword-2, keyword-3, keyword-4, keyword-5, keyword-6}
+\keywords{Multi-Agent, Reinforcement Learning, Deep Learning, Distribute, Replay Memory}
 
 \begin{document}
 
@@ -52,7 +52,7 @@ Recently, AI arouse hot topics around the world, especially after the appearence
 
 \begin{figure}[t]
  \begin{center}
-  \includegraphics[width=5cm]{imgs/adversary_chasing.png}
+  \includegraphics[width=6cm]{imgs/maddpg1.PNG}
   \caption{Predator-Prey(CHANGE)}
   \label{fig:adversaryChasing}
  \end{center}
@@ -63,7 +63,6 @@ Deep Reinforcement Learning (DRL) is one of the technologies which support AI de
 
 One representative for multi-agent task is Predator-Prey\cite{maddpg}, showed in Fg.\ref{fig:adversaryChasing}. In this case, there are 3 predators, 1 prey and 2 landmarks (obstacles) in this map. Predators move with slower speed to chase the faster moving prey. For human being, the cooperation strategy of splitting up and surrounding is absolutely easy to understand and learn. Unfortunately, it is difficult for agent to learn. Although Traditional reinforcement learning such as Q-learning\cite{qlearning}, Policy Gradient\cite{pg} performs well and even better than human being in Atari Game\cite{ddpg}, it performs poorly in multi-agent domain. The reason why the successful RL methods using in single-agent domains could not acquire the same result in multi-agent domain is that along with mult-agent self-learning, the environment becomes non-stationary which force learning fail to convergence. \par
 
-(CHANGE)
 We have two problems in multi-agent task, one is that traditional RL methods can't solve multi-agent task because environment becomes non-stationary during learning, the second one is that random sampling batch data from experience replay may not be effcient enough for learning. In this work, we first introduce several prior works and related researches and explain why they failed in multi-agent domain. Then we will explain our proposed method - Distributed Multi-Agent Cooperation Algorithm besed on MADDPG algorithm\cite{maddpg} using prioritized batch data in solving Predator-Prey task. Experiments shows we achieve xx\% faster and xx times rewards comparing to MADDPG and DDPG.\par
 
 \section{Background} 
@@ -253,7 +252,16 @@ First, in order to collect batch data (transitions) effciently, we use asynchron
 Second, multiple workers running in parallel with different random seed is likely to explore different situations of the same environment. Moreover, exploration noise in different parallel world could attribute to the exploration's diversity. \par
 
 \subsection{Prioritized Batch Data}
-
+\subsection{Actor-Critic Method}
+\begin{figure}[h]
+ \begin{center}
+  \includegraphics[width=8cm]{imgs/max_loss.PNG}
+  \caption{
+  Batch selection with max loss.
+  }
+  \label{fig:max_loss}
+ \end{center}
+\end{figure}
 Experience replay addresses the following issues: it helps to break the temporal correlations by sampling from big fixed-size memory. What measures batch data as good one or bad one it how much it could lead to a better single update. Temporal-Difference error (TD error) used in DDPG is the difference between target network Q value and evalution network Q value. The bigger TD error is, the better this update is. \par
 
 To select good batch data for updating, we could firstly sample a $M$ (bigger size) batches, we plan to select $N$ (smaller size) batches for update. We divide $M$ size batches into $M/N$ size parts, we calculate each part's loss. We choose the part of batches with biggest loss to train. We call these good batch data as Prioritized Batch Data. \par
@@ -264,8 +272,16 @@ For example, $M = 256$ and $N = 64$, we first sample $256$ batches from experien
 In this section, we will introduce the experiment environment we use and several experiments we carried to verify the superiority of our proposed method.
 
 \subsection{Experiment Environment}
+
 To perform our experiments, we adopt the multiagent-particle-envs used in \cite{maddpg}, which consists of $N$ agents and $L$ landmarks inhabiting a two-dimensional world with continunous observation space and continunous action space. There are several types of environment it provides with. We focus on multi-agent cooperation for chasing target, so we adopt Predator-Prey environment.\par
 In this Predator-Prey environment, $N$ slower cooperating agents try to chase the faster target which could flee away from chasers around a randomly generated environment with $L$ large landmarks served as obstacles to blcok the way. Each time agents collide with a target, the agens are rewarded while the target is penalized. \par
+\begin{figure}[t]
+ \begin{center}
+  \includegraphics[width=6cm]{imgs/maddpg1.PNG}
+  \caption{Predator-Prey(CHANGE)}
+  \label{fig:adversaryChasing}
+ \end{center}
+\end{figure}
 Due to being short of calculation capability and resources, we add some constrains in Predator-Prey environment.
 \begin{itemize}
   \item $N$ Predators, $\in$ $[2, 4]$ with random initial position.

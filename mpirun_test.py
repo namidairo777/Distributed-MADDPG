@@ -57,12 +57,14 @@ def test(args):
             exploration_noise.append(OUNoise(mu = np.zeros(action_dim[i])))
         for i in range(n):
             actors[i].mainModel.load_weights(args["modelFolder"] + str(i)+'_weights'+'.h5')   #"ep200/" + 
+        # s = env.reset()
+        # s = env.reset()
         for ep in range(10):
             s = env.reset()
             reward = 0.0
             for step in range(200):
-                time.sleep(0.01)
                 env.render()
+                # time.sleep(10)
                 actions = []
                 for i in range(env.n):
                     state_input = np.reshape(s[i],(-1,env.observation_space[i].shape[0]))
@@ -101,7 +103,7 @@ if __name__ == '__main__':
     parser.add_argument('--use-gym-monitor', help='record gym results', action='store_true')
     parser.add_argument('--monitor-dir', help='directory for storing gym results', default='./results/videos/video1')
     parser.add_argument('--summary-dir', help='directory for storing tensorboard info', default='./results/2vs1_dis_prioritizedBatch/tfdata/')
-    parser.add_argument('--modelFolder', help='the folder which saved model data', default="./results/2vs1_dis_prioritizedBatch/weights_critic_worker/") #2vs1_dis_prioritizedBatch/weights_critic_worker/ 2vs1_maddpg_tanh/weights_prioritized/
+    parser.add_argument('--modelFolder', help='the folder which saved model data', default="./results/2vs1_dis_prioritizedBatch/weights_maddpg/") #2vs1_dis_prioritizedBatch/weights_critic_worker/ 2vs1_maddpg_tanh/weights_prioritized/
     parser.add_argument('--runTest', help='use saved model to run', default=False)
     parser.add_argument('--work-max-step', help='work_max_step', default=50)
     parser.add_argument('--m-size', help='M size', default=128)

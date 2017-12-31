@@ -236,12 +236,14 @@ class FilledPolygon(Geom):
             glVertex3f(p[0], p[1],0)  # draw each vertex
         glEnd()
 
-        color = (self._color.vec4[0] * 0.5, self._color.vec4[1] * 0.5, self._color.vec4[2] * 0.5, self._color.vec4[3] * 0.5)
-        glColor4f(*color)
-        glBegin(GL_LINE_LOOP)
-        for p in self.v:
-            glVertex3f(p[0], p[1],0)  # draw each vertex
-        glEnd()
+        if len(self.v) != 4 : 
+            color = (self._color.vec4[0] * 0.5, self._color.vec4[1] * 0.5, self._color.vec4[2] * 0.5, self._color.vec4[3] * 0.5)
+            glColor4f(*color)
+            glBegin(GL_LINE_LOOP)
+            for p in self.v:
+                glVertex3f(p[0], p[1],0)  # draw each vertex
+            glEnd()
+        
         # print("render1")
 
 def make_circle(radius=10, res=30, filled=True):

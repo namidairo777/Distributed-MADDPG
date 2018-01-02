@@ -9,6 +9,7 @@
 \usepackage{comment}
 \usepackage{amsfonts}
 \usepackage{amsmath}
+\usepackage{multicol}
 
 \graphicspath{ {imgs/} }
 
@@ -224,7 +225,7 @@ We have discussed in previous sections that traditional reinforcement learning m
 
 \begin{figure*}[h]
  \begin{center}
-  \includegraphics[width=12cm]{imgs/architecture.PNG}
+  \includegraphics[width=14cm]{imgs/architecture_loss.PNG}
   \caption{architecture}
   \label{fig:architecture}
  \end{center}
@@ -244,10 +245,9 @@ However, multi-agent setting has tremendous situations comparing with single-age
 
 In this work, I present a distributed multi-worker architecture for batch data collection and a sellection method for prioritized batch data.
 
-
 \subsection{Distributed Multi-Agent architecture}
 
-First, in order to collect batch data (transitions) effciently, we use asynchronous workers, similarly to Asynchronous RL Framework \cite{a3c}, but instead of using multi-thread, we use multi-process on a single machine. And we use MPI (Message Passing Interface) for data transfer among processes. Each worker on each process is able to asychronously run its own environment and collect batch data and sychronously send data to master (the main process for learning) and recieving nerual network weights from the master. \par
+Similarly to Asynchronous RL Framework \cite{a3c}, but instead of using multi-thread, we use multi-process on a single machine. And we use MPI (Message Passing Interface) for data transfer among processes. Each worker is able to asychronously run its own environment and collect batch data and sychronously send data to master (the main process for learning) and recieving nerual network weights from the master. \par
 
 Second, multiple workers running in parallel with different random seed is likely to explore different situations of the same environment. Moreover, exploration noise in different parallel world could attribute to the exploration's diversity. \par
 
@@ -262,9 +262,10 @@ Second, multiple workers running in parallel with different random seed is likel
   \label{fig:max_loss}
  \end{center}
 \end{figure}
-Experience replay addresses the following issues: it helps to break the temporal correlations by sampling from big fixed-size memory. What measures batch data as good one or bad one it how much it could lead to a better single update. Temporal-Difference error (TD error) used in DDPG is the difference between target network Q value and evalution network Q value. The bigger TD error is, the better this update is. \par
+As we also adopt actor-critic architecture and off-policy DDPG learning. We sample batch data from a big experience replay, and use it to update critic in Master. 
+Eeplay Memory addresses the following issues: it helps to break the temporal correlations by sampling from big fixed-size memory. What measures batch data as good one or bad one it how much it could lead to a better single update. Temporal-Difference error (TD error) used in DDPG is the difference between target network Q value and evalution network Q value. The bigger TD error is, the better this update is. \par
 
-To select good batch data for updating, we could firstly sample a $M$ (bigger size) batches, we plan to select $N$ (smaller size) batches for update. We divide $M$ size batches into $M/N$ size parts, we calculate each part's loss. We choose the part of batches with biggest loss to train. We call these good batch data as Prioritized Batch Data. \par
+To select good batch data for updating, we use our proposed distributed architecture to parallel calculate different batch data in each worker. we could firstly sample a $M$ (bigger size) batches, we plan to select $N$ (smaller size) batches for update. We divide $M$ size batches into $M/N$ size parts, we calculate each part's loss. We choose the part of batches with biggest loss to train. We call these good batch data as Prioritized Batch Data. \par
 
 For example, $M = 256$ and $N = 64$, we first sample $256$ batches from experience replay. Because $M / N = 4$, we divide $256$ batches into $4$ parts, and calculate loss for each part. If the result is {$11.1, 10.5, 30.2, 4.1$}, we know the third part has biggest loss, so we choose third part of batch data to do updating. 
 
@@ -345,24 +346,14 @@ Each layer uses ReLU activation function to keep good information.
 For actor, we use tanh to keep value between $[-1, 1]$. 
 
 \subsection{Results}
-
-\begin{figure}[ht]
+\begin{figure*}[h]
  \begin{center}
-  \includegraphics[width=7cm]{imgs/2vs1_maddpg_prioritized_result.png}
-  \caption{DMADDPG, MADDPG, DDPG (2 vs 1)}
-  \label{fig:result1}
+  \includegraphics[width=14cm]{imgs/comparision_ddpg_maddpg_dmaddpg.png}
+  \caption{Reward in Learning Process}
+  \label{fig:tensor_result}
  \end{center}
-\end{figure}
+\end{figure*}
 
-DMADDPG is best.
-
-\begin{figure}[ht]
- \begin{center}
-  \includegraphics[width=7cm]{imgs/2vs1_maddpg_prioritized_result.png}
-  \caption{DMADDPG, MADDPG, DDPG (4 vs 2)}
-  \label{fig:result1}
- \end{center}
-\end{figure}
 
 DMADDPG is best.
 
@@ -587,6 +578,9 @@ Peter Henderson, Riashat Islam, et al. \textsl{Deep Reinforcement Learning that 
 \bibitem{gym}
 https://github.com/openai/gym
 
+\section*{謝辞}
+本研究は、I really appreciate the help and care from Processor Nobuhara.
+
 \vspace{2zh}
 \begin{minipage}{73mm}
  \begin{wrapfigure}[6]{l}[-4pt]{30mm} 
@@ -600,6 +594,7 @@ https://github.com/openai/gym
 
 \end{thebibliography}
 \clearpage
+
 \section{Appendix}
 
 
@@ -652,6 +647,5 @@ https://github.com/openai/gym
 \EndFor
 \end{algorithmic}
 \end{algorithm*}
-
 
 \end{document}

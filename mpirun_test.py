@@ -17,13 +17,13 @@ import time
 def test(args):
     # env and random seed
     env = make_env.make_env('simple_tag')
-    np.random.seed(int(args['random_seed']))
+    np.random.seed(int(args['random_seed'])+100)
     tf.set_random_seed(int(args['random_seed']))
     # env.seed(int(args['random_seed']))
     # tensorflow
     gpu_options = tf.GPUOptions(per_process_gpu_memory_fraction=0.3)
     # config=tf.ConfigProto(gpu_options=gpu_options, log_device_placement=False)
-    with tf.Session() as sess:
+    with tf.Session(config=tf.ConfigProto(gpu_options=gpu_options, log_device_placement=False)) as sess:
         # agent number
         n = env.n
         ave_n = 0
@@ -59,7 +59,8 @@ def test(args):
             actors[i].mainModel.load_weights(args["modelFolder"] + str(i)+'_weights'+'.h5')   #"ep200/" + 
         # s = env.reset()
         # s = env.reset()
-        for ep in range(10):
+        ave_reward = 0.0
+        for ep in range(100):
             s = env.reset()
             reward = 0.0
             for step in range(200):
@@ -76,7 +77,9 @@ def test(args):
                 if np.all(d):
                     break
             print("Episode: {:d}  | Reward: {:f}".format(ep, reward))
+            ave_reward += reward
         env.close()
+        print("Average reward: {} of 10 episodes".format(ave_reward/100))
         import sys
         sys.exit("test over!")
 
@@ -103,7 +106,8 @@ if __name__ == '__main__':
     parser.add_argument('--use-gym-monitor', help='record gym results', action='store_true')
     parser.add_argument('--monitor-dir', help='directory for storing gym results', default='./results/videos/video1')
     parser.add_argument('--summary-dir', help='directory for storing tensorboard info', default='./results/2vs1_dis_prioritizedBatch/tfdata/')
-    parser.add_argument('--modelFolder', help='the folder which saved model data', default="./results/2vs1_dis_prioritizedBatch/weights_maddpg/") #2vs1_dis_prioritizedBatch/weights_critic_worker/ 2vs1_maddpg_tanh/weights_prioritized/
+    # comparison_of_3/tensorboard_data/weights/proposed_weights/
+    parser.add_argument('--modelFolder', help='the folder which saved model data', default="./results/2vs1_dis_prioritizedBatch/weights_critic_worker_256sample/") #2vs1_dis_prioritizedBatch/weights_critic_worker/ 2vs1_maddpg_tanh/weights_prioritized/
     parser.add_argument('--runTest', help='use saved model to run', default=False)
     parser.add_argument('--work-max-step', help='work_max_step', default=50)
     parser.add_argument('--m-size', help='M size', default=128)

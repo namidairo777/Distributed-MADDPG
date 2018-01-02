@@ -15,17 +15,6 @@ import time
 comm = MPI.COMM_WORLD
 rank = comm.Get_rank()
 size = comm.Get_size()
-
-def prioritized_batch(replay, critics, m_size, n_size):
-    """
-    1. sample m_size batch from replay memory
-    2. calculating td loss
-    3. ranking
-    4. select n_size td loss with higher td loss
-    5. use it for 
-    """
-
-    s_batch,a_batch,r_batch,d_batch,s2_batch = replayMemory.miniBatch(m_size)
            
 def build_summaries(n):
     """
@@ -88,13 +77,13 @@ def distributed_train_every_step(sess, env, args, actors, critics, noise, ave_n)
             replayMemory.add(s, a, r, done, s2)
             episode_reward += r
             s = s2
-            if replayMemory.size() > int(args["minibatch_size"]):
+            if replayMemory.size() > int(args["m_size"]):
 
                 # send weights to workers
                 critic_weights = [critic.mainModel.get_weights() for critic in critics]
                 for i in range(1, size):
                     comm.send(critic_weights, dest=i, tag=9)
-                
+
                 # MADDPG Adversary Agent            
                 for i in range(ave_n):
                     actor = actors[i]
@@ -132,26 +121,27 @@ def distributed_train_every_step(sess, env, args, actors, critics, noise, ave_n)
                         # number of losses
                         loss_num = int(int(args['m_size']) / int(args['n_size']))
 
+                        # print("loss :", loss_num)
 
                         # send batch data to workers
-                        for i in range(loss_num):
+                        for worker in range(loss_num):
                             data = (s_batch_i[index:index+int(args["n_size"])], 
                                                    a_batch_data[index:index+int(args["n_size"])], 
                                                    target_q[index:index+int(args["n_size"])])
-                            comm.send(data, dest=i+1, tag=9)
+                            comm.send(data, dest=worker+1, tag=9)
 
                             index += int(args["n_size"])
                         
                         # recieve loss from workers
-                        for i in range(loss_num):
-                            losses.append(comm.recv(source=i+1, tag=9))
+                        for loss_i in range(loss_num):
+                            losses.append(comm.recv(source=loss_i+1, tag=9))
 
                         # which has max loss
                         sorted_index = np.argsort(losses).tolist()
                         max_index = sorted_index[-1]
                         # clip index
                         head = max_index * int(args["n_size"])
-                        tail = head +  (args["n_size"])
+                        tail = head +  int(args["n_size"])
                         # clipped batch data with higher losses
                         prioritized_a_batch = a_batch_data[head: tail] 
                         prioritized_s_batch = s_batch_i[head: tail] 
@@ -376,12 +366,12 @@ if __name__ == '__main__':
     parser.add_argument('--render-env', help='render the gym env', action='store_true')
     parser.add_argument('--use-gym-monitor', help='record gym results', action='store_true')
     parser.add_argument('--monitor-dir', help='directory for storing gym results', default='./results/videos/video1')
-    parser.add_argument('--summary-dir', help='directory for storing tensorboard info', default='./results/2vs1_dis_prioritizedBatch/tfdata_critic_worker/')
-    parser.add_argument('--modelFolder', help='the folder which saved model data', default="./results/2vs1_dis_prioritizedBatch/weights_critic_worker/")
+    parser.add_argument('--summary-dir', help='directory for storing tensorboard info', default='./results/2vs1_dis_prioritizedBatch/tfdata_critic_worker_256sample/')
+    parser.add_argument('--modelFolder', help='the folder which saved model data', default="./results/2vs1_dis_prioritizedBatch/weights_critic_worker_256sample/")
     parser.add_argument('--runTest', help='use saved model to run', default=False)
     parser.add_argument('--work-max-step', help='work_max_step', default=1)
-    parser.add_argument('--m-size', help='M size', default=128)
-    parser.add_argument('--n-size', help='N size', default=64)
+    parser.add_argument('--m-size', help='M size', default=256)
+    parser.add_argument('--n-size', help='N size', default=128)
 
     parser.set_defaults(render_env=False)
     parser.set_defaults(use_gym_monitor=False)

@@ -64,7 +64,7 @@ def test(args):
             s = env.reset()
             reward = 0.0
             for step in range(200):
-                env.render()
+                # env.render()
                 # time.sleep(10)
                 actions = []
                 for i in range(env.n):
@@ -107,6 +107,7 @@ if __name__ == '__main__':
     parser.add_argument('--monitor-dir', help='directory for storing gym results', default='./results/videos/video1')
     parser.add_argument('--summary-dir', help='directory for storing tensorboard info', default='./results/2vs1_dis_prioritizedBatch/tfdata/')
     # comparison_of_3/tensorboard_data/weights/proposed_weights/
+    # 2vs1_dis_prioritizedBatch/weights_critic_worker_256sample/
     parser.add_argument('--modelFolder', help='the folder which saved model data', default="./results/2vs1_dis_prioritizedBatch/weights_critic_worker_256sample/") #2vs1_dis_prioritizedBatch/weights_critic_worker/ 2vs1_maddpg_tanh/weights_prioritized/
     parser.add_argument('--runTest', help='use saved model to run', default=False)
     parser.add_argument('--work-max-step', help='work_max_step', default=50)

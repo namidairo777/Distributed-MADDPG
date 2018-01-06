@@ -37,7 +37,7 @@ Supervised by: & Nobuhara Hajime, Yasushi Nakauchi and Junichi Hoshino (Division
 \dateheader{2018年1月}
 
 \abstract{
-Traditional reinforcement learning method such as Q-learning, Policy Gradients failed in multi-agent domain because environment becomes non-stationary during learning. And random sampling batch data from experience replay may not be effcient enough for learning. To solve these two problems, in this work, we introduce our proposed method - Distributed Multi-Agent Cooperation Algorithm besed on MADDPG algorithm\cite{maddpg} using prioritized batch data in solving Predator-Prey task. And our experiments shows we achieve 20.5\% improvement over prior MADDPG method.
+Traditional reinforcement learning method such as Q-learning, Policy Gradients failed in multi-agent domain because environment becomes non-stationary during learning. And random sampling batch data from experience replay may not be effcient enough for learning. To solve these two problems, in this work, we introduce our proposed method - Distributed Multi-Agent Cooperation Algorithm besed on MADDPG algorithm\cite{maddpg} using prioritized batch data in solving Predator-Prey task. And our experiments shows we achieve 41.3\% improvement over prior MADDPG method.
 }
 
 \keywords{Multi-Agent, Reinforcement Learning, Deep Learning, Distribution, Replay Memory}
@@ -120,7 +120,7 @@ Q^\pi(s, a) = \mathbb{E}[R] = \mathbb{E}[\sum_{t=0}^{\infty}\gamma^t r_t | s_0 =
 
 Action-value function describes the expected return for selecting action $a \in A$ in state $s \in S$ and then following policy $\pi$. An optimal action value function $Q^*(s, a)$ could be found by choosing maximal $Q$ value with action $a$. Under optimal policy, $V^\pi(s) = \max_a{Q^\pi(s, a)}$.
 
-\subsubsection{Q-learning\cite{qlearning}(CHANGE)}
+\subsubsection{Q-learning\cite{qlearning}}
 
 Q-learning is one of famous algorithms in RL. We update action-value function using a Bellman equation: 
 \begin{equation}
@@ -153,6 +153,11 @@ $$where \ y = r + \gamma\max \bar{Q}^*(s', a'|\bar{\theta})$$
 $\theta$ is the parameters in neural network, $\bar{\theta}$ is target network paramerters which we will explain later and $(s,a,r,s')$ is the transition we used for this iteration. \par
 
 Loss function of DQN shows in Eq. (\ref{eq:dqn-loss}). We could improve the estimate of Q-value function by minimizing loss from transitions which are experienced by following the policy. \par
+The gradients of every paramter are defined as:
+\begin{equation}
+\frac{\partial L(\theta)}{\partial \theta} = \mathbb{E}[(y - Q(s, a|\theta))\frac{\partial Q(s, a|\theta)}{\partial \theta}]
+\end{equation}
+The optimization methods for minimizing loss are Stochastic Gradient Descent (SGD), Adam and so on.
 DQN has two important techniques to keep training process stable: experience and target networks.\par
 Experience replay \cite{replay} memory stores transitions of the form $(s,a,r,s')$ , enabling the agent to sample training batch data and train on previously observed data offline. By sampling from a large memory, the temporal correlations that could adversely affect RL algorithms are broken. \par
 Target networks \cite{qlearning} is to maintain the weights of network enacting the policy. In Eq. (\ref{eq:dqn-loss}), $\bar{Q}$ represents target network Q function and $\bar{\theta}$ represents its network parametes. Target network keeps frozen (parameters fixed) for a period of time and then updates. \par
@@ -187,8 +192,9 @@ Actor-Critic method, shown in Fg. \ref{fig:actorcritic}, is to combine value fun
 In order to optimize policy, Determinstic Policy Gradients (DPG) maintains a parameterized actor function $\mu(s|\theta^\mu)$ which specifies the current policy by deterministically mapping a state to a specific action. The critic $Q(s, a)$ is learned using the Bellman equation as in Q-learning. The actor uses an objective function which denotes the expected futurn return. The actor is updated by following the applying chain rule to the expected return with respect to actor parameters:
 \begin{equation}
 \begin{split}
-\bigtriangledown_{\theta^\mu}J = & \mathbb{E}[\bigtriangledown_{\theta^\mu}Q(s, a|\theta^\mu)] \\
-& = \mathbb{E}[\bigtriangledown_{a}Q(s, a|\theta^\mu)\bigtriangledown_{\theta^\mu}\mu(s|\theta^\mu)]
+\frac{\partial L(\theta^\mu)}{\partial \theta^\mu} = 
+& \mathbb{E}[\frac{\partial Q(s, a|\theta^\mu)}{\partial \theta^\mu}] \\
+& \mathbb{E}[\frac{\partial Q(s, a|\theta^\mu)}{\partial a} \frac{\partial \mu(s|\theta^\mu)}{\partial \theta^\mu}]
 \end{split}
 \end{equation}
 They proved this is the gradient of policy's performance in \cite{dpg}. \par
@@ -211,13 +217,6 @@ During training time, actor trys to maxmize $J(\mu)$ using  and critic trys to m
 However, policy of each agent is changing during training process, and the environment becomes non-stationary due to the fact agent could not predict next state with its own policy. This issue would prevent training stability and the use of experience replay memory. DDPG could not solve multi-agent setting problems. \par
 
 \section{Proposed Methods}
-
-We have discussed in previous sections that traditional reinforcement learning methods perform poorly in our multi-agent domain environment. In this section, we will introduce Multi-Agent DDPG from related research then propose our method. The method consists of two part. One is the Distributed Multi-Worker architecture using multi-process programming. The other one is that we prioritize batch data in order to get a better learning at every step.
-
-
-\subsection{Multi-Agent DDPG}
-
-
 \begin{figure*}[h]
  \begin{center}
   \includegraphics[width=14cm]{imgs/architecture_loss.PNG}
@@ -225,6 +224,13 @@ We have discussed in previous sections that traditional reinforcement learning m
   \label{fig:architecture}
  \end{center}
 \end{figure*}
+We have discussed in previous sections that traditional reinforcement learning methods perform poorly in our multi-agent domain environment. In this section, we will introduce Multi-Agent DDPG from related research then propose our method. The method consists of two part. One is the Distributed Multi-Worker architecture using multi-process programming. The other one is that we prioritize batch data in order to get a better learning at every step.
+
+
+\subsection{Multi-Agent DDPG}
+
+
+
 
 \begin{figure}[ht]
  \begin{center}
@@ -255,22 +261,22 @@ In this work, we present a distributed multi-worker architecture for loss calcul
  \begin{center}
   \includegraphics[width=8cm]{imgs/max_loss.PNG}
   \caption{
-  Batch selection with max loss.
+  Batch selection with max loss. (Optional!)
   }
   \label{fig:max_loss}
  \end{center}
 \end{figure}
-As we adopt actor-critic architecture and off-policy learning. We sample batch data from a big experience replay, and use it to update critic in Master. 
-Eeplay Memory addresses the following issues: it helps to break the temporal correlations by sampling from big fixed-size memory. What measures batch data as good one or bad one it how much it could lead to a better single update. Temporal-Difference error (TD error) used in DDPG is the difference between target network Q value and evalution network Q value. The bigger TD error is, the better this update is. \par
+As we adopt actor-critic architecture and off-policy learning. We need a big experience replay memory as DQN and DDPG did. Replay Memory stores trainsitions explored by actor's policy. We use batch data which is sampled from replay memory to update critic. \par 
+Replay Memory addresses the following issues: it helps to break the temporal correlations by sampling from big fixed-size memory. What measures a batch data as good one or bad one is how much it could lead to a better single update. Temporal-Difference error (TD error) used in DDPG is the difference between target network Q value and evalution network Q value. The bigger TD error is, the better this update is. \par
 
-We could first sample a $M$ size (bigger size) batches, we plan to select $N$ size (smaller size) batches for update. We divide $M$ size batches into $M/N$ size parts, we calculate each part's loss. We choose the part of batches with biggest loss to train. We call these good batch data as Prioritized Batch Data. \par
+We could first sample $M$ size batch data, then we plan to select $N$ size batches from the sampled batch data for update. We divide $M$ size batches into $M/N$ size parts, we calculate each part's loss. We choose the part of batches with biggest loss to train. We call these good batch data as Prioritized Batch Data. \par
 
 For example, $M = 256$ and $N = 64$, we first sample $256$ batches from experience replay. Because $M / N = 4$, we divide $256$ batches into $4$ parts, and calculate loss for each part. If the result is {$11.1, 10.5, 30.2, 4.1$}, we know the third part has biggest loss, so we choose third part of batch data to do updating. 
 
 
 \subsection{Distributed Multi-Agent architecture}
 
-Because calculating loss of each part of batch data is time consuming for single multi-agent system, we propose distribution method for calculating batch data loss. Similarly to Asynchronous RL Framework \cite{a3c}, however instead of using multi-thread, we use multi-process on a single machine. We adopt MPI (Message Passing Interface) for data transfer among processes. Each worker is able to sychronously recieve network weights from master and then send loss data to master (the main process for learning). Meantime, master select the batch data with maximal loss from workers and then do an one-step update. \par
+Due to the fact that calculating loss of each part of batch data is time consuming for single multi-agent system, we propose distribution method for calculating batch data loss. Similarly to Asynchronous RL Framework \cite{a3c}, however instead of using multi-thread, we use multi-process on a single machine. We adopt MPI (Message Passing Interface) for data transfer among processes. Our Distributed Multi-Agent architecture consists of two parts: master and multiple workers.  Each worker is able to sychronously recieve network weights from master and then send loss data to master (the main process for learning). Meantime, master select the batch data with maximal loss from workers and then do an one-step update. \par
 
 Multiple workers running in parallel could decrease loss calculation time. \par
 

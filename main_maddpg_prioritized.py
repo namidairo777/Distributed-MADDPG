@@ -20,7 +20,7 @@ def main(args):
     #with tf.device("/gpu:0"):
     # MADDPG for Ave Agent
     # DDPG for Good Agent
-    gpu_options = tf.GPUOptions(per_process_gpu_memory_fraction=0.85)
+    gpu_options = tf.GPUOptions(per_process_gpu_memory_fraction=0.5)
     config = tf.ConfigProto(
         device_count = {'CPU': 0}
     )
@@ -80,7 +80,7 @@ def test(args):
     tf.set_random_seed(int(args['random_seed']))
     # env.seed(int(args['random_seed']))
     # tensorflow
-    gpu_options = tf.GPUOptions(per_process_gpu_memory_fraction=0.3)
+    gpu_options = tf.GPUOptions(per_process_gpu_memory_fraction=0.5)
     # config=tf.ConfigProto(gpu_options=gpu_options, log_device_placement=False)
     with tf.Session() as sess:
         # agent number
@@ -156,11 +156,12 @@ if __name__ == '__main__':
     parser.add_argument('--render-env', help='render the gym env', action='store_true')
     parser.add_argument('--use-gym-monitor', help='record gym results', action='store_true')
     parser.add_argument('--monitor-dir', help='directory for storing gym results', default='./results/videos/video1')
-    parser.add_argument('--summary-dir', help='directory for storing tensorboard info', default='./results/2vs1_maddpg_tanh/tfdata_test/')
-    parser.add_argument('--modelFolder', help='the folder which saved model data', default="./results/2vs1_maddpg_tanh/weights_test/")
+    parser.add_argument('--summary-dir', help='directory for storing tensorboard info', default='./results/4vs2/tfdata_proposed/')
+    parser.add_argument('--modelFolder', help='the folder which saved model data', default="./results/4vs2/weights_proposed/")
     parser.add_argument('--runTest', help='use saved model to run', default=False)
-    parser.add_argument('--m-size', help='M size', default=128)
-    parser.add_argument('--n-size', help='N size', default=64)
+    parser.add_argument('--work-max-step', help='work_max_step', default=1)
+    parser.add_argument('--m-size', help='M size', default=256)
+    parser.add_argument('--n-size', help='N size', default=128)
 
     parser.set_defaults(render_env=False)
     parser.set_defaults(use_gym_monitor=False)

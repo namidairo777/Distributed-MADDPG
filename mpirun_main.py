@@ -267,7 +267,7 @@ def main(args):
         env.seed(int(args['random_seed']))
 
         # tensorflow
-        gpu_options = tf.GPUOptions(per_process_gpu_memory_fraction=0.35)
+        gpu_options = tf.GPUOptions(per_process_gpu_memory_fraction=0.3)
         with tf.Session(config=tf.ConfigProto(gpu_options=gpu_options, log_device_placement=False)) as sess:
             # agent number
             n = env.n
@@ -318,7 +318,7 @@ def main(args):
         np.random.seed(int(args['random_seed']) + rank)
         tf.set_random_seed(int(args['random_seed']) + rank)
         env.seed(int(args['random_seed']) + rank) 
-        gpu_options = tf.GPUOptions(per_process_gpu_memory_fraction=0.08)
+        gpu_options = tf.GPUOptions(per_process_gpu_memory_fraction=0.1)
         with tf.Session(config=tf.ConfigProto(gpu_options=gpu_options, log_device_placement=False)) as sess:
             # agent number
             n = env.n
@@ -366,8 +366,8 @@ if __name__ == '__main__':
     parser.add_argument('--render-env', help='render the gym env', action='store_true')
     parser.add_argument('--use-gym-monitor', help='record gym results', action='store_true')
     parser.add_argument('--monitor-dir', help='directory for storing gym results', default='./results/videos/video1')
-    parser.add_argument('--summary-dir', help='directory for storing tensorboard info', default='./results/2vs1_dis_prioritizedBatch/tfdata_critic_worker_256sample/')
-    parser.add_argument('--modelFolder', help='the folder which saved model data', default="./results/2vs1_dis_prioritizedBatch/weights_critic_worker_256sample/")
+    parser.add_argument('--summary-dir', help='directory for storing tensorboard info', default='./results/4vs2/tfdata_proposed/')
+    parser.add_argument('--modelFolder', help='the folder which saved model data', default="./results/4vs2/weights_proposed/")
     parser.add_argument('--runTest', help='use saved model to run', default=False)
     parser.add_argument('--work-max-step', help='work_max_step', default=1)
     parser.add_argument('--m-size', help='M size', default=256)

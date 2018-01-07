@@ -77,8 +77,8 @@ def train(sess,env,args,actors,critics,noise, ave_n):
 			#time.sleep(10)
 			s2,r,done,_ = env.step(a) # a is a list with each element being an array
 			#replayMemory.add(np.reshape(s,(actor.input_dim,)),np.reshape(a,(actor.output_dim,)),r,done,np.reshape(s2,(actor.input_dim,)))
-			if ep % 50 == 0:
-				env.render()
+			#if ep % 50 == 0:
+			#	env.render()
 			replayMemory.add(s,a,r,done,s2)			
 			s = s2
 			# MADDPG Adversary Agent			

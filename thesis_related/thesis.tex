@@ -365,12 +365,14 @@ In order to have proper hyperparameters and network, we get ideas from\cite{para
 
 For neural network architecture, we use 2 hidden layers with 400 and 300 units in our network with ReLU activation function. We use tanh activation function in output layer of actor to keep value between $[-1, 1]$. 
 
-Training machine we use for experiments has spec of Intel(R) Core(TM) i7-7700 3.60GHz, 32.0 GB RAM, NVIDIA GeForce GTX 1080 Ti. We develop this experiment with keras 2.1.2 （using tensorflow 1.4 as backend). We adopt mean squared error as our expected loss of a batch data. The optimizer uses Adam\cite{adam}.\par
+In our implementation, we use Ornstein-Uhlenbeck (OU) process\cite{ou} to act as exploration noise process with $\sigma = 0.3$ and $\theta = 0.15$. With OU process, we can generate temporally correlated exploration in physical control problems. DDPG\cite{ddpg} also adopted OU process in experiments. Additionally, as we mentioned that target network is used to maintain stability. Instead of update target network after a period of time, we use soft target updates as DDPG did. The weights of target network are updated by tracking learned networks: $\bar{\theta} \leftarrow \tau \theta + (1 - \tau)\bar{\theta}$. This soft update could contribute to learning stability by slow change every one-step update. \par
+
+Training machine we use for experiments has spec of Intel(R) Core(TM) i7-7700 3.60GHz, 32.0 GB RAM, NVIDIA GeForce GTX 1080 Ti. We develop this experiment with Keras 2.1.2 （using tensorflow 1.4 as backend). We adopt mean squared error as our expected loss of a batch data. The optimizer uses Adam\cite{adam}.\par
 
 \subsection{Results}
 
 
-In our experiments, we compare our proposed method with MADDPG and DDPG, adopting each algorithm into predators. Preys use DDPG to learn how to flee under the above rules. Due to the limited calculation resources, we train each settings to 3800 episodes (almost convergence).  
+In our experiments, we compare our proposed method with MADDPG and DDPG, adopting each algorithm into predators. Preys use DDPG to learn how to flee under the above rules. Due to the limited calculation resources, we train each setting to 3800 episodes (almost convergence).  
 
 
 In Fig.\ref{fig:tensor_result}, we could know the learning with our proposed method surpassed other two algorithms from approximately 1100 episodes and kept the superiority still 3800 episodes. DDPG maintains about 50 points reward after 3800 episodes training. And MADDPG outperforms over DDPG, resulting in nearly 100 points rewards. Moreover, our proposed method achieves the most points reward among all algorithms. Our proposed method performs best in Predator-Prey task. \par
@@ -462,11 +464,18 @@ Peter Henderson, Riashat Islam, et al. \textsl{Deep Reinforcement Learning that 
 \bibitem{gym}
 https://github.com/openai/gym
 
+\bibitem{ou}
+Uhlenbeck, George E and Ornstein, Leonard S. \textsl{On the theory of the brownian motion}. Physical
+review, 36(5):823, 1930.
+
 \bibitem{adam}
 Diederik P. Kingma, Jimmy Ba. \textsl{Adam: A Method for Stochastic Optimization}. arXiv:1412.6980, 2014.
 
 \section*{謝辞}
-本研究は、延原先生に深く感謝する。
+筑波大学大学院システム情報工学研究科准教授延原肇先生には,本研究を実施する機会を戴き,
+その遂行に当たり様々な面でご指導を頂き,本論文の細部にわたるご助言を頂き心より御礼申し上げます.
+また,的確なアドバイスを頂きました,中内靖先生,星野准一先生にこの場をお借りして感謝申し上げます.
+最後に,本研究に対して様々なご助言とご協力をいただきました,計算知能・マルチメディア研究室の皆様に心より感謝申し上げます.
 \vspace{2zh}
 \begin{minipage}{73mm}
  \begin{wrapfigure}[6]{l}[-4pt]{30mm} 
@@ -490,8 +499,8 @@ Diederik P. Kingma, Jimmy Ba. \textsl{Adam: A Method for Stochastic Optimization
 \caption{Distributed Multi-Agent DDPG algorithm (Master)}
 \begin{algorithmic}
 \State {Initialize replay memory $\mathbb{D}$}
-\State {Initialize a random process $\cal{N}$ for action exploration}
 \For {$episode = 1$ to max-episodes}
+  \State {Initialize a random process $\cal{N}$ for action exploration}
   \State {Receive initial observation state $s$}
   \For {$t = 1$ to max-episode-length}
     \State {for each agent $i$, select action $a_i = \mu_i(o_i) + \cal{N}$ w.r.t. the current policy and exploration}

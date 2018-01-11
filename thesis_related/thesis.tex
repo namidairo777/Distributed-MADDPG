@@ -40,8 +40,7 @@ Supervised by: & Nobuhara Hajime, Yasushi Nakauchi and Junichi Hoshino (Division
 \abstract{
 Traditional reinforcement learning methods such as Q-learning, Policy Gradient failed in multi-agent domain because environment becomes non-stationary during learning. And random sampling batch data from experience replay may not be efficient enough for learning. To solve these two problems, in this work, we introduce our proposed method - Distributed Multi-Agent Cooperation Algorithm based on MADDPG algorithm\cite{maddpg} using prioritized batch data to solve Predator-Prey task. Our experiments show we achieve 41.3\% improvement over prior MADDPG method.
 }
-
-\keywords{Multi-Agent, Reinforcement Learning, Deep Learning, Distribution, Prioritized Batch Data}
+\keywords{Multi-Agent, Deep Reinforcement Learning, Prioritized Batch Data， Distributed Computing}
 
 \begin{document}
 
@@ -195,8 +194,8 @@ In order to optimize policy, Determinstic Policy Gradient (DPG) maintains a para
 \label{dpg_prove}
 \begin{split}
 \frac{\partial J(\theta^\mu)}{\partial \theta^\mu} = 
-& \mathbb{E}_{s,a,r,s'}[\frac{\partial Q(s, a|\theta^\mu)}{\partial \theta^\mu}] \\
-& \mathbb{E}_{s,a,r,s'}[\frac{\partial Q(s, a|\theta^\mu)}{\partial a} \frac{\partial \mu(s|\theta^\mu)}{\partial \theta^\mu}]
+& \mathbb{E}_{s,a,r,s'}[\frac{\partial Q(s, a|\theta^Q)|_{a = \mu(s)}}{\partial \theta^\mu}] \\
+& \mathbb{E}_{s,a,r,s'}[\frac{\partial Q(s, a|\theta^Q)}{\partial a} \frac{\partial \mu(s|\theta^\mu)}{\partial \theta^\mu}]
 \end{split}
 \end{equation}
 They proved this is the gradient of policy's performance in DPG\cite{dpg}. \par
@@ -210,7 +209,7 @@ Deep Deterministic Policy Gradient (DDPG) is based on Deterministic Policy Gradi
 L(\theta^Q) = \mathbb{E}_{s,a,r,s'}[y - Q(s, a|\theta^Q))] 
 \end{equation}
 \begin{equation}
-J(\theta^\mu) = \mathbb{E}_{s,a,r,s'}[Q^\mu(s, a|\theta^\mu) | _{a=\mu(s)}]
+J(\theta^\mu) = \mathbb{E}_{s,a,r,s'}[Q(s, a|\theta^Q) | _{a=\mu(s)}]
 \end{equation}
 
 In above equations, $L(\theta)$ denotes the loss function of actor using expected TD error return where $\theta$ is the parameters of actor neural network. $J(\mu)$ denotes the loss function of critic using expected future return where $\mu$ is the parameters of critic neural network. \par
@@ -236,16 +235,16 @@ We have discussed in previous sections that traditional reinforcement learning m
 Recently, OpenAI released a method which extends traditional DDPG method to multi-agent domain\cite{maddpg}. As we know, single-agent algorithm failed because while agent is updating policy, the environment becomes non-stationary which turns out to failure of convergence. Multi-Agent DDPG, in Fig. \ref{fig:maddpg} found a centralized way to put other agents’ actions into consideration. The objective function of actor and critic for agent $i$ are defined as:
 \begin{equation}
 \begin{split}
-& L(\theta^Q_i) \\
-& = \mathbb{E}_{s,a,r,s'}[y - Q(o_i, a_1, a_2, \ldots, a_i ,\ldots, a_n|\theta^\mu_i)] 
+& L(\theta^Q_i) =  \\
+& \mathbb{E}_{s,a,r,s'}[y - Q(o_i, a_1, a_2, \ldots, a_i ,\ldots, a_n|\theta^Q_i] 
 \end{split}
 \end{equation}
-$$where\ y = r_i + \gamma{Q_i}(o_i, \bar{a}),$$
-$$ \bar{a} = (\bar{a}_1, \bar{a}_2, \ldots, \bar{a}_i ,\ldots, \bar{a}_n)_{\bar{a}_j = \bar{\mu}_j(o_j)}$$
+$$where\ y = r_i + \gamma{Q_i}(o'_i, \bar{a'}),$$
+$$ \bar{a'} = (\bar{a'}_1, \bar{a'}_2, \ldots, \bar{a'}_i ,\ldots, \bar{a'}_n)_{\bar{a'}_j = \bar{\mu}_j(o_j)}$$
 \begin{equation}
 \begin{split}
-& J(\theta^\mu_i) \\
-& = \mathbb{E}_{s,a,r,s'}[Q(o_i, (a_1, a_2, \ldots, a_i ,\ldots, a_n) | _{a_i = \mu_i(o_i)})] 
+& J(\theta^\mu_i) = \\
+& \mathbb{E}_{s,a,r,s'}[Q(o_i, (a_1, a_2, \ldots, a_i ,\ldots, a_n|\theta^Q_i) | _{a_i = \mu_i(o_i)})] 
 \end{split}
 \end{equation}
 $\bar{a}_j$ is the action chosen by agent $j$'s critic target network. $a_j$ is the agent $j$'s action from batch data. \par
@@ -253,9 +252,8 @@ Objective function $L(\theta^Q_i)$ denotes agent $i$'s critic loss function, and
 From Eq. (\ref{dpg_prove}), we could maximize actor objective function by following the gradients in MADDPG:
 \begin{equation}
 \begin{split}
-&\frac{\partial J(\theta^\mu)}{\partial \theta^\mu} = \\
-& \mathbb{E}_{s,a,r,s'}[\frac{\partial Q(o_i, a_1, a_2, \ldots, a_i ,\ldots, a_n|\theta^\mu_i)}{\partial \theta^\mu_i}] \\
-& \mathbb{E}_{s,a,r,s'}[\frac{\partial Q(o_i, a_1, a_2, \ldots, a_i ,\ldots, a_n|\theta^\mu_i)}{\partial a_i} \frac{\partial \mu_i(o_i|\theta^\mu_i)}{\partial \theta^\mu_i}]
+& \frac{\partial J(\theta^\mu)}{\partial \theta^\mu} = \\
+& \mathbb{E}_{s,a,r,s'}[\frac{\partial Q(o_i, a_1, a_2, \ldots, a_i ,\ldots, a_n|\theta^Q_i)}{\partial a_i} \frac{\partial \mu_i(o_i|\theta^\mu_i)}{\partial \theta^\mu_i}]
 \end{split}
 \end{equation}
 MADDPG still uses experience replay, which is same as in DDPG, to stabilize the learning process. Experience replay\cite{replay} memory can store transitions of the form $(s,a,r,s')$, and agent can sample batches to do updates. The sampling process breaks the correlation between transitions and improves learning's stability. \par
@@ -288,9 +286,9 @@ Replay Memory addresses the following issues: it helps to break the temporal cor
 \end{figure}
 
 
-In Fig. \ref{fig:max_loss}, We could first sample M-size batch data, then we plan to select $N-size$ batches from the sampled batch data for update. We divide M-size batches into M-size/N-size size parts, we calculate each part's loss. We choose the part of batches with biggest loss to train. We call these good batch data as Prioritized Batch Data. \par
+In Fig. \ref{fig:max_loss}, We could first sample M-size batch data, then we plan to select N-size batches from the sampled batch data for update. We divide M-size batches into M-size/N-size size parts, we calculate each part's loss. We choose the part of batches with biggest loss to train. We call these good batch data as Prioritized Batch Data. \par
 
-For example, M-size $= 256$ and N-size $= 64$, we first sample $256$ batches from experience replay. Because M-size/N-size $= 4$, we divide $256$ batches into $4$ parts, and calculate loss for each part. If the result is {$11.1, 10.5, 30.2, 4.1$}, we know the third part has biggest loss, so we choose third part of batch data for one-step update. 
+For example, M-size $= 256$ and N-size $= 64$, we first sample $256$ batches from experience replay. Because M-size/N-size $= 4$, we divide $256$ batches into $4$ parts, and calculate loss for each part. If the result is 11.1, 10.5, 30.2 and 4.1, we know the third part has biggest loss, so we choose third part of batch data for one-step update. 
 
 \subsection{Distributed Multi-Agent architecture}
 
@@ -540,7 +538,7 @@ Diederik P. Kingma, Jimmy Ba. \textsl{Adam: A Method for Stochastic Optimization
       \State {Update actor using the sampled policy gradient:
       $$
          \frac{\partial J(\theta^\mu_i)}{\partial \theta^\mu_i} = 
- \mathbb{E}[\frac{\partial Q(o_i, a_1, a_2, \ldots, a_i ,\ldots, a_n|\theta^\mu_i)}{\partial a_i} \frac{\partial \mu(o_i|\theta^\mu_i)}{\partial \theta^\mu_i}]
+ \mathbb{E}[\frac{\partial Q(o_i, a_1, a_2, \ldots, a_i ,\ldots, a_n|\theta^Q_i)}{\partial a_i} \frac{\partial \mu_i(o_i|\theta^\mu_i)}{\partial \theta^\mu_i}]
       $$
       }
     \EndFor

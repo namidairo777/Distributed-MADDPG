@@ -35,7 +35,7 @@ Supervised by: & Nobuhara Hajime, Yasushi Nakauchi and Junichi Hoshino (Division
 \authorheader{唐 \ 霄}
 % use English name when you use the English style
 
-\dateheader{2018年1月}
+\dateheader{2018年3月}
 
 \abstract{
 Traditional reinforcement learning methods such as Q-learning, Policy Gradient failed in multi-agent domain because environment becomes non-stationary during learning. And random sampling batch data from experience replay may not be efficient enough for learning. To solve these two problems, in this work, we introduce our proposed method - Distributed Multi-Agent Cooperation Algorithm based on MADDPG algorithm\cite{maddpg} using prioritized batch data to solve Predator-Prey task. Our experiments show we achieve 41.3\% improvement over prior MADDPG method.
@@ -108,7 +108,6 @@ Currently, there are three approaches to solve MDP problems: value-based method,
 \subsection{Value-based Method}
 
 Value-based method is based on estimating the expected return of being given a state. The state-value function is the expected return when starting in state $s$ and following policy $\pi$ henceforth: 
-
 \begin{equation}
 V^\pi(s) = \mathbb{E}[R] = \mathbb{E}[\sum_{t=0}^{\infty}\gamma^t r_t | s_0 = s].
 \end{equation}
@@ -144,7 +143,6 @@ Q-learning is an off-policy algorithm, because $Q^\pi$ is updated by transitions
 \subsubsection{Deep Q-Network\cite{dqn}}
 
 Deep Q-Network (DQN) is the extended version of Q-learning using deep learning. It uses a deep neural network to work as the Q value function. 
-
 \begin{equation} \label{eq:dqn-loss}
 L(\theta) = \mathbb{E}_{s,a,r,s'}[y - Q(s, a|\theta))],  
 \end{equation}
@@ -204,7 +202,6 @@ Similar to DQN, there are researches on applying deep learning to policy gradien
 
 \subsubsection{Deep Deterministic Policy Gradient\cite{ddpg}}
 Deep Deterministic Policy Gradient (DDPG) is based on Deterministic Policy Gradient\cite{dpg} and could solve high-dimensional continuous action spaces tasks. DDPG is an actor-critic method, actor represents agent's policy $\pi$ and critic is to evaluate the action which policy would take using Value function like DQN. 
-
 \begin{equation}
 L(\theta^Q) = \mathbb{E}_{s,a,r,s'}[y - Q(s, a|\theta^Q))] 
 \end{equation}
@@ -413,10 +410,15 @@ Not only the Learning curves we provide to show superiority of our proposed meth
 From Fig. \ref{fig:result}, our proposed method has an average reward of 129.4 over MADDPG's 91.6 and DDPG's 30.4, resulting in 41.3\% improvement over MADDPG and 325.7\% improvement over DDPG.
 
 \section{Conclusion}
-In this work, there are two problems in multi-agent task, one is that traditional RL methods can't solve multi-agent task because environment becomes non-stationary during learning and learning cannot converge, the second one is that random sampling batch data from experience replay is efficient for learning. We introduced our proposed method - Distributed Multi-Agent Cooperation Algorithm based on MADDPG algorithm using prioritized batch data in solving Predator-Prey task. Experiments shows we have 41.3\% improvement over MADDPG and 325.7\% improvement over DDPG.
+In this work, there are two problems in multi-agent task, one is that traditional RL methods can't solve multi-agent task because environment becomes non-stationary during learning and learning cannot converge, the second one is that random sampling batch data from experience replay is efficient for learning. We introduced our proposed method - Distributed Multi-Agent Cooperation Algorithm based on MADDPG algorithm using prioritized batch data in solving Predator-Prey task. Experiments shows we have 41.3\% improvement over MADDPG and 325.7\% improvement over DDPG. \par
 Hyperparameters tuning and network architecture choice still remain a lot of work to do.
 And due to current limited hardware resources, our experiments cost a lot time in training. This could be improved in future.
 
+\section*{謝辞}
+筑波大学大学院システム情報工学研究科准教授延原肇先生には,本研究を実施する機会を戴き,
+その遂行に当たり様々な面でご指導を頂き,本論文の細部にわたるご助言を頂き心より御礼申し上げます.
+また,的確なアドバイスを頂きました,中内靖先生,星野准一先生にこの場をお借りして感謝申し上げます.
+最後に,本研究に対して様々なご助言とご協力をいただきました,計算知能・マルチメディア研究室の皆様に心より感謝申し上げます.
 
 \begin{thebibliography}{9}
 
@@ -492,11 +494,8 @@ review, 36(5):823, 1930.
 \bibitem{adam}
 Diederik P. Kingma, Jimmy Ba. \textsl{Adam: A Method for Stochastic Optimization}. arXiv:1412.6980, 2014.
 
-\section*{謝辞}
-筑波大学大学院システム情報工学研究科准教授延原肇先生には,本研究を実施する機会を戴き,
-その遂行に当たり様々な面でご指導を頂き,本論文の細部にわたるご助言を頂き心より御礼申し上げます.
-また,的確なアドバイスを頂きました,中内靖先生,星野准一先生にこの場をお借りして感謝申し上げます.
-最後に,本研究に対して様々なご助言とご協力をいただきました,計算知能・マルチメディア研究室の皆様に心より感謝申し上げます.
+\end{thebibliography}
+
 \vspace{2zh}
 \begin{minipage}{73mm}
  \begin{wrapfigure}[6]{l}[-4pt]{30mm} 
@@ -507,8 +506,6 @@ Diederik P. Kingma, Jimmy Ba. \textsl{Adam: A Method for Stochastic Optimization
  \noindent 筑 \ 波 \ 太 \  郎\\\\
  筑波大学大学院システム情報工学研究科知能機能システム専攻所属
 \end{minipage}
-
-\end{thebibliography}
 \clearpage
 
 \begin{comment}
@@ -534,7 +531,7 @@ Diederik P. Kingma, Jimmy Ba. \textsl{Adam: A Method for Stochastic Optimization
       \State {Receive loss calculation result from workers}
       \State {Set $\arg\max_{batch}(loss)$ as training batch}
       \State {Set $y = r_i + \gamma{Q_i}(o_i, (\bar{a}_1, \bar{a}_2, \ldots, \bar{a}_i ,\ldots, \bar{a}_n)|_{\bar{a}_j = \bar{\mu}_j(o_j)})$}
-      \State {Update critic by minimizing the loss $L(\theta_i) = E_{s,a,r,s'}[(y - Q(o_i, a_1, a_2, \ldots, a_n))^2]$}
+      \State {Update critic by minimizing the loss $L(\theta_i) = E_{s,a,r,s'}[y - Q(o_i, a_1, a_2, \ldots, a_n)]$}
       \State {Update actor using the sampled policy gradient:
       $$
          \frac{\partial J(\theta^\mu_i)}{\partial \theta^\mu_i} = 
@@ -559,7 +556,7 @@ Diederik P. Kingma, Jimmy Ba. \textsl{Adam: A Method for Stochastic Optimization
     \For {agent $i = 1$ to n}
       \State {Receive batch data (${s, a, r, s'}$) of N-size from Master}
       \State {Set $y = r_i + \gamma{Q_i}(o_i, (\bar{a}_1, \bar{a}_2, \ldots, \bar{a}_i ,\ldots, \bar{a}_n)|_{\bar{a}_j = \bar{\mu}_j(o_j)})$}
-      \State {Calculate loss $L(\theta_i) = E_{s,a,r,s'}[(y - Q(s, a_1, a_2, \ldots, a_n))^2]$}
+      \State {Calculate loss $L(\theta_i) = E_{s,a,r,s'}[y - Q(s, a_1, a_2, \ldots, a_n)]$}
       \State {Send loss result to Master}
     \EndFor
   \EndFor

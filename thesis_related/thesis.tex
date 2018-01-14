@@ -10,6 +10,7 @@
 \usepackage{amsfonts}
 \usepackage{amsmath}
 \usepackage{subfiles}
+\renewcommand{\refname}{References}
 
 \graphicspath{ {imgs/} }
 
@@ -32,13 +33,13 @@ Supervised by: & Nobuhara Hajime, Yasushi Nakauchi and Junichi Hoshino (Division
 \end{tabular}
 }
 
-\authorheader{唐 \ 霄}
+\authorheader{TANG \ Xiao}
 % use English name when you use the English style
 
 \dateheader{2018年3月}
 
 \abstract{
-Traditional reinforcement learning methods such as Q-learning, Policy Gradient failed in multi-agent domain because environment becomes non-stationary during learning. And random sampling batch data from experience replay may not be efficient enough for learning. To solve these two problems, in this work, we introduce our proposed method - Distributed Multi-Agent Cooperation Algorithm based on MADDPG algorithm\cite{maddpg} using prioritized batch data to solve Predator-Prey task. Our experiments show we achieve 41.3\% improvement over prior MADDPG method.
+Traditional reinforcement learning methods such as Q-learning, Policy Gradient failed in multi-agent domain because environment becomes non-stationary during learning. And random sampling batch data from experience replay may not be efficient enough for learning. To solve these two problems, in this work, we first introduce the background and related researches, explain their advantages and why they failed in multi-agent domain. Then we introduce our proposed method: Distributed Multi-Agent Cooperation Algorithm based on MADDPG algorithm\cite{maddpg} using prioritized batch data. We use our proposed method to solve Predator-Prey task. Our experiments show we achieve 41.3\% improvement over prior MADDPG method and 325.7\% improvement over DDPG.
 }
 \keywords{Multi-Agent, Deep Reinforcement Learning, Prioritized Batch Data， Distributed Computing}
 
@@ -410,17 +411,14 @@ Not only the Learning curves we provide to show superiority of our proposed meth
 From Fig. \ref{fig:result}, our proposed method has an average reward of 129.4 over MADDPG's 91.6 and DDPG's 30.4, resulting in 41.3\% improvement over MADDPG and 325.7\% improvement over DDPG.
 
 \section{Conclusion}
-In this work, there are two problems in multi-agent task, one is that traditional RL methods can't solve multi-agent task because environment becomes non-stationary during learning and learning cannot converge, the second one is that random sampling batch data from experience replay is efficient for learning. We introduced our proposed method - Distributed Multi-Agent Cooperation Algorithm based on MADDPG algorithm using prioritized batch data in solving Predator-Prey task. Experiments shows we have 41.3\% improvement over MADDPG and 325.7\% improvement over DDPG. \par
-Hyperparameters tuning and network architecture choice still remain a lot of work to do.
-And due to current limited hardware resources, our experiments cost a lot time in training. This could be improved in future.
+In this work, there are two problems in multi-agent task, one is that traditional RL methods can't solve multi-agent task because environment becomes non-stationary during learning and learning cannot converge, the second one is that random sampling batch data from experience replay is efficient for learning. We first discussed about traditional RL methods and explained what they can do and what they cannot do. Then we introduced our proposed method: Distributed Multi-Agent Cooperation Algorithm based on MADDPG algorithm using prioritized batch data. We use our proposed method to solve Predator-Prey task. Experiments shows we have 41.3\% improvement over MADDPG and 325.7\% improvement over DDPG. \par
+However, selecting the best hyperparameters and network architecture remains a lot of work to do. Due to current limited hardware resources, we are not capable of carrying more experiments within the limited time. Traditional RL tasks have fixed goal for agents or rule-based opponents while in Predator-Prey tasks, both predators and preys need to learn separate policy, one is chasing preys, another one is fleeing from predators which could make learning process complicated and unstable. This could be improved in future work.
 
-\section*{謝辞}
-筑波大学大学院システム情報工学研究科准教授延原肇先生には,本研究を実施する機会を戴き,
-その遂行に当たり様々な面でご指導を頂き,本論文の細部にわたるご助言を頂き心より御礼申し上げます.
-また,的確なアドバイスを頂きました,中内靖先生,星野准一先生にこの場をお借りして感謝申し上げます.
-最後に,本研究に対して様々なご助言とご協力をいただきました,計算知能・マルチメディア研究室の皆様に心より感謝申し上げます.
 
-\begin{thebibliography}{9}
+\section*{Acknowledgement}
+I would like to thank my supervisor, Associate Professor Nobuhara Hajime of division of Intelligent Interaction Technologies in University of Tsukuba, for the patient guidance, encouragement and advice he has provided throughout my time as his student. I would also like to thank my subadvisors, Professor Yasushi Nakauchi and Junichi Hoshino, they provided me with a lot of great advices and ideas. Finally, I would like to thank all members of Computational Intelligence and Multimedia Laboratory.
+
+\begin{thebibliography}{99}
 
 \bibitem{alphago}
 David Silver, Aja Huang, et al. Mastering the Game of Go with Deep Neural Networks and Tree Search. Nature, 529(7587):484–489, 2016.
@@ -497,16 +495,17 @@ Diederik P. Kingma, Jimmy Ba. \textsl{Adam: A Method for Stochastic Optimization
 \end{thebibliography}
 
 \vspace{2zh}
-\begin{minipage}{73mm}
- \begin{wrapfigure}[6]{l}[-4pt]{30mm} 
+\begin{minipage}{76mm}
+ \begin{wrapfigure}[7]{l}{30mm}
  \begin{center}
   \includegraphics[width=30mm]{face.eps}
  \end{center}
  \end{wrapfigure}
- \noindent 筑 \ 波 \ 太 \  郎\\\\
- 筑波大学大学院システム情報工学研究科知能機能システム専攻所属
+ \noindent TANG \ Xiao \\
+ \\
+ Master's Program in Intelligent Interaction Technologies, University of Tsukuba.
 \end{minipage}
-\clearpage
+\vspace{3zh}
 
 \begin{comment}
 

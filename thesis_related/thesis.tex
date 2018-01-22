@@ -29,7 +29,7 @@
 \eadvisors{
 \scriptsize
 \begin{tabular}{ll}
-Supervised by: & Nobuhara Hajime, Yasushi Nakauchi and Junichi Hoshino (Division of Intelligent Interaction Technologies) \\
+Supervised by: NOBUHARA Hajime, NAKAUCHI Yasushi, HOSHINO Junichi (Division of Intelligent Interaction Technologies) \\
 \end{tabular}
 }
 
@@ -41,18 +41,18 @@ Supervised by: & Nobuhara Hajime, Yasushi Nakauchi and Junichi Hoshino (Division
 \abstract{
 Traditional reinforcement learning methods such as Q-learning, Policy Gradient failed in multi-agent domain because environment becomes non-stationary during learning. And random sampling batch data from experience replay may not be efficient enough for learning. To solve these two problems, in this work, we first introduce the background and related researches, explain their advantages and why they failed in multi-agent domain. Then we introduce our proposed method: Distributed Multi-Agent Cooperation Algorithm based on MADDPG algorithm\cite{maddpg} using prioritized batch data. We use our proposed method to solve Predator-Prey task. Our experiments show we achieve 41.3\% improvement over prior MADDPG method and 325.7\% improvement over DDPG.
 }
-\keywords{Multi-Agent, Deep Reinforcement Learning, Prioritized Batch Data， Distributed Computing}
+\keywords{Multi-Agent, Deep Reinforcement Learning, Prioritized Batch Data, Distributed Computing}
 
 \begin{document}
 
 \maketitle
 \thispagestyle{iitheader}
 \section{Introduction}
-Recently, AI has aroused hot topics around the world, especially after the appearance of AlphaGo\cite{alphago}. DeepMind introduced their Go player which is called AlphaGo in 2015, it won over human being's top professional players in past two years. And AlphaGo evolved to become nearly unbeatable versions which are AlphaGo Master and AlphaGo Zero\cite{alphagozero}. AI not only contribute to the application of traditional sports, game is also a big area which studies are ongoing. DeepMind and Blizzard released StarCraft II platform as an AI research environment\cite{starcraft} for researchers around the world.\par
+Recently, AI has aroused hot topics around the world, especially after the appearance of AlphaGo\cite{alphago}. DeepMind introduced its Go player which is called AlphaGo in 2015, it won over human being's top professional players in past two years. And AlphaGo evolved to become nearly unbeatable versions which are AlphaGo Master and AlphaGo Zero\cite{alphagozero}. Not only traditional strategy board game which AI contributes to, multi-agent strategy game is also a big area which studies are ongoing. DeepMind and Blizzard released StarCraft II platform as an AI research environment\cite{starcraft} for researchers around the world.\par
 
-Deep Reinforcement Learning (DRL) is one of the technologies which support AI development. There are a lot of applications from game playing\cite{game} to robot controlling\cite{robot}. Also, Google applied Deep Learning to data center cooling by 40\%\cite{google} electric cost off. Healthcare and finance\cite{finance} are the areas which are being researched and expected to have great impact to society. However, even though DRL is successfully applied to many single-agent domain tasks, there are variety of applications which are in multi-agent domain. These application needs multiple agents to evolve together to be capable of good communication and cooperation. For instance, multi-character controlling in game playing, multi-agent system in delivery system and so on.
+Deep Reinforcement Learning (DRL) is one of the technologies which support AI development. There are a lot of applications of DRL from game playing\cite{game} to robot controlling\cite{robot}. Also, Google applied Deep Learning to data center cooling by 40\%\cite{google} electric cost off. Healthcare and finance\cite{finance} are the areas which are being researched and expected to have great impact to society. However, even though DRL is successfully applied to many single-agent domain tasks, there are variety of applications which are in multi-agent domain. These application needs multiple agents to evolve together to be capable of good communication and cooperation. For instance, multi-character controlling in game playing, multi-agent system in delivery system and so on.
 
-One representative for multi-agent task is Predator-Prey\cite{maddpg}, showed in Fig. \ref{fig:adversaryChasing}. In this case, there are 3 predators, 1 prey and 2 landmarks (obstacles) in this map. Predators move with slower speed to chase the faster moving prey. For human being, the cooperation strategy of splitting up and surrounding is easy to understand and learn. Unfortunately, it is difficult for agent to learn. Although Traditional reinforcement learning such as Q-learning\cite{qlearning}, Policy Gradient\cite{pg} performs well and even better than human being in Atari Game\cite{ddpg}, it performs poorly in multi-agent domain. The reason why the successful RL methods using in single-agent domains could not acquire the same result in multi-agent domain is that along with multi-agent self-learning, the environment becomes non-stationary which force learning fail to convergence. \par
+One representative for multi-agent task is Predator-Prey\cite{maddpg}, showed in Fig. \ref{fig:adversaryChasing}. In this case, there are 2 predators, 1 prey and 1 landmark (obstacle) in this map. Predators move with slow speed to chase faster moving prey. For human being, the cooperation strategy of splitting up and surrounding is easy to understand. Unfortunately, it is difficult for agent to learn. Although Traditional reinforcement learning such as Q-learning\cite{qlearning}, Policy Gradient\cite{pg} performs well and even better than human being in Atari Game\cite{ddpg}, it performs poorly in multi-agent domain. The reason why successful RL methods using in single-agent domains could not acquire the same result in multi-agent domain is that along with multi-agent self-learning, the environment becomes non-stationary which force learning fail to convergence. \par
 
 \begin{figure}[t]
  \begin{center}
@@ -67,7 +67,7 @@ We have two problems in multi-agent task, one is that traditional RL methods can
 \section{Background} 
 In this section, we introduce our prior researches and problem definition of multi-agent markov decision process.
 \subsection{Cover-heuristic Algorithm\cite{cover}}
-As for prior research for solving Predator-Prey task, we have proposed a cooperation searching algorithm. This method is based on map search using speed-up cover-heuristic algorithm\cite{cover-heuristic} (maximizing Predator's moving area and minimizing prey's moving area) and accelerating search by map abstraction and refinement. However, this method performs well in small-size maps but poorly in big-size maps, the computational time depends on the map size. An agent which could be called intelligent should have its own mind like human beings. This kind of AI can take actions based on its own policy.\par
+As for prior research for solving Predator-Prey task, we have proposed a cooperation searching algorithm. This method is based on map search using speed-up cover-heuristic algorithm\cite{cover-heuristic} (maximizing Predator's moving area and minimizing prey's moving area) and accelerating search by map abstraction and refinement. However, this method performs well in small-size maps but poorly in big-size maps,  because the computational time depends on the map size. An agent which could be called intelligent should have its own mind like human beings. This kind of AI can take actions based on its own policy.\par
 
 
 \subsection{Reinforcement Learning and Multi-Agent Markov Decision Process}
@@ -192,7 +192,7 @@ In order to optimize policy, Determinstic Policy Gradient (DPG) maintains a para
 \begin{equation}
 \label{dpg_prove}
 \begin{split}
-\frac{\partial J(\theta^\mu)}{\partial \theta^\mu} = 
+\frac{\partial J(\theta^\mu)}{\partial \theta^\mu} =  
 & \mathbb{E}_{s,a,r,s'}[\frac{\partial Q(s, a|\theta^Q)|_{a = \mu(s)}}{\partial \theta^\mu}] \\
 & \mathbb{E}_{s,a,r,s'}[\frac{\partial Q(s, a|\theta^Q)}{\partial a} \frac{\partial \mu(s|\theta^\mu)}{\partial \theta^\mu}]
 \end{split}
@@ -234,15 +234,15 @@ Recently, OpenAI released a method which extends traditional DDPG method to mult
 \begin{equation}
 \begin{split}
 & L(\theta^Q_i) =  \\
-& \mathbb{E}_{s,a,r,s'}[y - Q(o_i, a_1, a_2, \ldots, a_i ,\ldots, a_n|\theta^Q_i] 
+& \mathbb{E}_{s,a,r,s'}[y - Q(o_i, a_1, a_2, \ldots, a_n|\theta^Q_i)] 
 \end{split}
 \end{equation}
 $$where\ y = r_i + \gamma{Q_i}(o'_i, \bar{a'}),$$
-$$ \bar{a'} = (\bar{a'}_1, \bar{a'}_2, \ldots, \bar{a'}_i ,\ldots, \bar{a'}_n)_{\bar{a'}_j = \bar{\mu}_j(o_j)}$$
+$$ \bar{a'} = (\bar{a'}_1, \bar{a'}_2, \ldots, \bar{a'}_n)_{\bar{a'}_j = \bar{\mu}_j(o_j)}$$
 \begin{equation}
 \begin{split}
 & J(\theta^\mu_i) = \\
-& \mathbb{E}_{s,a,r,s'}[Q(o_i, (a_1, a_2, \ldots, a_i ,\ldots, a_n|\theta^Q_i) | _{a_i = \mu_i(o_i)})] 
+& \mathbb{E}_{s,a,r,s'}[Q(o_i, (a_1, a_2, \ldots, a_n|\theta^Q_i) | _{a_i = \mu_i(o_i)})] 
 \end{split}
 \end{equation}
 $\bar{a}_j$ is the action chosen by agent $j$'s critic target network. $a_j$ is the agent $j$'s action from batch data. \par
@@ -251,7 +251,7 @@ From Eq. (\ref{dpg_prove}), we could maximize actor objective function by follow
 \begin{equation}
 \begin{split}
 & \frac{\partial J(\theta^\mu)}{\partial \theta^\mu} = \\
-& \mathbb{E}_{s,a,r,s'}[\frac{\partial Q(o_i, a_1, a_2, \ldots, a_i ,\ldots, a_n|\theta^Q_i)}{\partial a_i} \frac{\partial \mu_i(o_i|\theta^\mu_i)}{\partial \theta^\mu_i}]
+& \mathbb{E}_{s,a,r,s'}[\frac{\partial Q(o_i, a_1, a_2,  \ldots, a_n|\theta^Q_i)}{\partial a_i} \frac{\partial \mu_i(o_i|\theta^\mu_i)}{\partial \theta^\mu_i}]
 \end{split}
 \end{equation}
 MADDPG still uses experience replay, which is same as in DDPG, to stabilize the learning process. Experience replay\cite{replay} memory can store transitions of the form $(s,a,r,s')$, and agent can sample batches to do updates. The sampling process breaks the correlation between transitions and improves learning's stability. \par
@@ -416,7 +416,7 @@ However, selecting the best hyperparameters and network architecture remains a l
 
 
 \section*{Acknowledgement}
-I would like to thank my supervisor, Associate Professor Nobuhara Hajime of division of Intelligent Interaction Technologies in University of Tsukuba, for the patient guidance, encouragement and advice he has provided throughout my time as his student. I would also like to thank my subadvisors, Professor Yasushi Nakauchi and Junichi Hoshino, they provided me with a lot of great advices and ideas. Finally, I would like to thank all members of Computational Intelligence and Multimedia Laboratory.
+I would like to thank my supervisor, Associate Professor Hajime Nobuhara of division of Intelligent Interaction Technologies in University of Tsukuba, for the patient guidance, encouragement and advice he has provided throughout my time as his student. I would also like to thank my subadvisors, Professor Yasushi Nakauchi and Junichi Hoshino, they provided me with a lot of great advices and ideas. Finally, I would like to thank all members of Computational Intelligence and Multimedia Laboratory.
 
 \begin{thebibliography}{99}
 
@@ -498,7 +498,7 @@ Diederik P. Kingma, Jimmy Ba. \textsl{Adam: A Method for Stochastic Optimization
 \begin{minipage}{76mm}
  \begin{wrapfigure}[7]{l}{30mm}
  \begin{center}
-  \includegraphics[width=30mm]{face.eps}
+  \includegraphics[width=30mm]{face.jpg}
  \end{center}
  \end{wrapfigure}
  \noindent TANG \ Xiao \\
@@ -529,12 +529,12 @@ Diederik P. Kingma, Jimmy Ba. \textsl{Adam: A Method for Stochastic Optimization
       \State {Send each N-size batch data to each worker}
       \State {Receive loss calculation result from workers}
       \State {Set $\arg\max_{batch}(loss)$ as training batch}
-      \State {Set $y = r_i + \gamma{Q_i}(o_i, (\bar{a}_1, \bar{a}_2, \ldots, \bar{a}_i ,\ldots, \bar{a}_n)|_{\bar{a}_j = \bar{\mu}_j(o_j)})$}
+      \State {Set $y = r_i + \gamma{Q_i}(o_i, (\bar{a}_1, \bar{a}_2, \ldots, \bar{a}_n)|_{\bar{a}_j = \bar{\mu}_j(o_j)})$}
       \State {Update critic by minimizing the loss $L(\theta_i) = E_{s,a,r,s'}[y - Q(o_i, a_1, a_2, \ldots, a_n)]$}
       \State {Update actor using the sampled policy gradient:
       $$
          \frac{\partial J(\theta^\mu_i)}{\partial \theta^\mu_i} = 
- \mathbb{E}[\frac{\partial Q(o_i, a_1, a_2, \ldots, a_i ,\ldots, a_n|\theta^Q_i)}{\partial a_i} \frac{\partial \mu_i(o_i|\theta^\mu_i)}{\partial \theta^\mu_i}]
+ \mathbb{E}[\frac{\partial Q(o_i, a_1, a_2, \ldots, a_n|\theta^Q_i)}{\partial a_i} \frac{\partial \mu_i(o_i|\theta^\mu_i)}{\partial \theta^\mu_i}]
       $$
       }
     \EndFor
@@ -554,7 +554,7 @@ Diederik P. Kingma, Jimmy Ba. \textsl{Adam: A Method for Stochastic Optimization
     \State {Receive network parameters from Master}
     \For {agent $i = 1$ to n}
       \State {Receive batch data (${s, a, r, s'}$) of N-size from Master}
-      \State {Set $y = r_i + \gamma{Q_i}(o_i, (\bar{a}_1, \bar{a}_2, \ldots, \bar{a}_i ,\ldots, \bar{a}_n)|_{\bar{a}_j = \bar{\mu}_j(o_j)})$}
+      \State {Set $y = r_i + \gamma{Q_i}(o_i, (\bar{a}_1, \bar{a}_2, \ldots, \bar{a}_n)|_{\bar{a}_j = \bar{\mu}_j(o_j)})$}
       \State {Calculate loss $L(\theta_i) = E_{s,a,r,s'}[y - Q(s, a_1, a_2, \ldots, a_n)]$}
       \State {Send loss result to Master}
     \EndFor

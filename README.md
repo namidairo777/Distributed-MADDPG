@@ -31,23 +31,24 @@ Similar to A3C algorithm, we adopt this Master and Multi-Worker architecture in 
 
 ### Result 
 <p align="center">
-  <img src="https://github.com/namidairo777/Distributed-MADDPG/blob/master/imgs/result_curve.png">
+  <img width="600" src="https://github.com/namidairo777/Distributed-MADDPG/blob/master/imgs/result_curve.png">
 </p>
 <p align="center">
-  <img width="600" src="https://github.com/namidairo777/Distributed-MADDPG/blob/master/imgs/result_table.PNG">
+  <img width="400" src="https://github.com/namidairo777/Distributed-MADDPG/blob/master/imgs/result_table.PNG">
 </p>
 
 ### Learning Progress
+- DDPG & MADDPG & PROPOSED
 <p align="center">
-  <div width="280" style="float:left">
+  <span width="280" style="float:left">
     <img width="280" src="https://github.com/namidairo777/Distributed-MADDPG/blob/master/imgs/ddpg_slow_gif.gif">
-  </div>
-  <div width="280" style="float:left">
+  </span>
+  <span width="280" style="float:left">
     <img width="280" src="https://github.com/namidairo777/Distributed-MADDPG/blob/master/imgs/maddpg_slow_gif.gif">
-  </div>
-  <div width="280" style="float:left">
+  </span>
+  <span width="280" style="float:left">
     <img width="280" src="https://github.com/namidairo777/Distributed-MADDPG/blob/master/imgs/proposed_slow_gif.gif">
-  </div>
+  </span>
 </p>
 
 ## How to run this program

@@ -1,5 +1,11 @@
 # Distributed-MADDPG
 Master Course Graduation Project - Distributed Multi-Agent Cooperation Algorithm based on MADDPG with prioritized batch data.
+
+## Distributed Multi-Agent Architecture
+<p align="center">
+  <img src="https://github.com/namidairo777/Distributed-MADDPG/blob/master/imgs/architecture.png">
+</p>
+
 ## Introduction
 This work focus on Multi-Agent Cooperation Problem. We proposed a method which consists 3 components:
 1. Related research - MADDPG
@@ -8,9 +14,6 @@ This algorithm comes from [Multi-Agent Actor-Critic for Mixed Cooperative-Compet
 To optimize one-step update without losing diversity, we divide batch data into several parts and prioritize these batches. Using the batch data with maximal loss to do one-step update.
 3. Distributed Multi-Agent Architecture
 Similar to A3C algorithm, we adopt this Master and Multi-Worker architecture in our work.
-
-## Distributed Multi-Agent Architecture
-![architecture](https://github.com/namidairo777/Distributed-MADDPG/blob/master/imgs/architecture.png)
 
 ## Experiment
 ### Environment
@@ -23,7 +26,7 @@ Similar to A3C algorithm, we adopt this Master and Multi-Worker architecture in 
 
 ### Neural Network
 <p align="center">
-  <img src="https://github.com/namidairo777/Distributed-MADDPG/blob/master/imgs/network.png">
+  <img width="800" src="https://github.com/namidairo777/Distributed-MADDPG/blob/master/imgs/network.PNG">
 </p>
 
 ### Result 
@@ -31,14 +34,20 @@ Similar to A3C algorithm, we adopt this Master and Multi-Worker architecture in 
   <img src="https://github.com/namidairo777/Distributed-MADDPG/blob/master/imgs/result_curve.png">
 </p>
 <p align="center">
-  <img src="https://github.com/namidairo777/Distributed-MADDPG/blob/master/imgs/result_table.png">
+  <img src="https://github.com/namidairo777/Distributed-MADDPG/blob/master/imgs/result_table.PNG">
 </p>
 
 ### Learning Progress
 <p align="center">
-  <img width="300" src="https://github.com/namidairo777/Distributed-MADDPG/blob/master/imgs/ddpg_slow_gif.gif">
-  <img width="300" src="https://github.com/namidairo777/Distributed-MADDPG/blob/master/imgs/maddpg_slow_gif.gif">
-  <img width="300" src="https://github.com/namidairo777/Distributed-MADDPG/blob/master/imgs/proposed_slow_gif.gif">
+  <div style="float:left">
+    <img width="280" src="https://github.com/namidairo777/Distributed-MADDPG/blob/master/imgs/ddpg_slow_gif.gif">
+  </div>
+  <div style="float:left">
+    <img width="280" src="https://github.com/namidairo777/Distributed-MADDPG/blob/master/imgs/maddpg_slow_gif.gif">
+  </div>
+  <div style="float:left">
+    <img width="280" src="https://github.com/namidairo777/Distributed-MADDPG/blob/master/imgs/proposed_slow_gif.gif">
+  </div>
 </p>
 
 ## How to run this program

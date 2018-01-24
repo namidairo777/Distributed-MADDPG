@@ -17,20 +17,29 @@ Similar to A3C algorithm, we adopt this Master and Multi-Worker architecture in 
 - Modified original environment (you can find in my repo) from [OpenAI](https://github.com/openai/multiagent-particle-envs)
 	- Fixed landmark
 	- Border
-![env](https://github.com/namidairo777/Distributed-MADDPG/blob/master/imgs/env.png)
+<p align="center">
+  <img src="https://github.com/namidairo777/Distributed-MADDPG/blob/master/imgs/env.png">
+</p>
 
 ### Neural Network
-
-![network](https://github.com/namidairo777/Distributed-MADDPG/blob/master/imgs/network.png)
+<p align="center">
+  <img src="https://github.com/namidairo777/Distributed-MADDPG/blob/master/imgs/network.png">
+</p>
 
 ### Result 
-![result_curve](https://github.com/namidairo777/Distributed-MADDPG/blob/master/imgs/result_curve.png)
-![result_table](https://github.com/namidairo777/Distributed-MADDPG/blob/master/imgs/result_table.png)
+<p align="center">
+  <img src="https://github.com/namidairo777/Distributed-MADDPG/blob/master/imgs/result_curve.png">
+</p>
+<p align="center">
+  <img src="https://github.com/namidairo777/Distributed-MADDPG/blob/master/imgs/result_table.png">
+</p>
 
 ### Learning Progress
-![ddpg_slow_gif](https://github.com/namidairo777/Distributed-MADDPG/blob/master/imgs/ddpg_slow_gif.gif)
-![maddpg_slow_gif](https://github.com/namidairo777/Distributed-MADDPG/blob/master/imgs/maddpg_slow_gif.gif)
-![proposed_slow_gif](https://github.com/namidairo777/Distributed-MADDPG/blob/master/imgs/proposed_slow_gif.gif)
+<p align="center">
+  <img width="300" src="https://github.com/namidairo777/Distributed-MADDPG/blob/master/imgs/ddpg_slow_gif.gif">
+  <img width="300" src="https://github.com/namidairo777/Distributed-MADDPG/blob/master/imgs/maddpg_slow_gif.gif">
+  <img width="300" src="https://github.com/namidairo777/Distributed-MADDPG/blob/master/imgs/proposed_slow_gif.gif">
+</p>
 
 ## How to run this program
 For program using MPI:
@@ -44,7 +53,6 @@ python xxx.py
 ```
 
 ## Future Work (4 vs 2)
-![4vs2_slow_gif](https://github.com/namidairo777/Distributed-MADDPG/blob/master/imgs/4vs2_slow_gif.gif)
 <p align="center">
-  <img width="460" height="300" src="https://github.com/namidairo777/Distributed-MADDPG/blob/master/imgs/4vs2_slow_gif.gif">
+  <img width="300" src="https://github.com/namidairo777/Distributed-MADDPG/blob/master/imgs/4vs2_slow_gif.gif">
 </p>

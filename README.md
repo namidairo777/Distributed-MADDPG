@@ -3,7 +3,7 @@ Master Course Graduation Project - Distributed Multi-Agent Cooperation Algorithm
 
 ## Distributed Multi-Agent Architecture
 <p align="center">
-  <img src="https://github.com/namidairo777/Distributed-MADDPG/blob/master/imgs/architecture.png">
+  <img src="https://github.com/namidairo777/Distributed-MADDPG/blob/master/imgs/architecture.PNG">
 </p>
 
 ## Introduction
@@ -21,7 +21,7 @@ Similar to A3C algorithm, we adopt this Master and Multi-Worker architecture in 
 	- Fixed landmark
 	- Border
 <p align="center">
-  <img src="https://github.com/namidairo777/Distributed-MADDPG/blob/master/imgs/env.png">
+  <img width="300" src="https://github.com/namidairo777/Distributed-MADDPG/blob/master/imgs/env.png">
 </p>
 
 ### Neural Network
@@ -34,18 +34,18 @@ Similar to A3C algorithm, we adopt this Master and Multi-Worker architecture in 
   <img src="https://github.com/namidairo777/Distributed-MADDPG/blob/master/imgs/result_curve.png">
 </p>
 <p align="center">
-  <img src="https://github.com/namidairo777/Distributed-MADDPG/blob/master/imgs/result_table.PNG">
+  <img width="600" src="https://github.com/namidairo777/Distributed-MADDPG/blob/master/imgs/result_table.PNG">
 </p>
 
 ### Learning Progress
 <p align="center">
-  <div style="float:left">
+  <div width="280" style="float:left">
     <img width="280" src="https://github.com/namidairo777/Distributed-MADDPG/blob/master/imgs/ddpg_slow_gif.gif">
   </div>
-  <div style="float:left">
+  <div width="280" style="float:left">
     <img width="280" src="https://github.com/namidairo777/Distributed-MADDPG/blob/master/imgs/maddpg_slow_gif.gif">
   </div>
-  <div style="float:left">
+  <div width="280" style="float:left">
     <img width="280" src="https://github.com/namidairo777/Distributed-MADDPG/blob/master/imgs/proposed_slow_gif.gif">
   </div>
 </p>

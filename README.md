@@ -1,5 +1,5 @@
 # Distributed-MADDPG
-Master Course Graduation Project - Distributed Multi-Agent Cooperation Algorithm based on MADDPG with prioritized batch data.
+Distributed Multi-Agent Cooperation Algorithm based on MADDPG with prioritized batch data.
 
 ## Distributed Multi-Agent Architecture
 <p align="center">
@@ -74,6 +74,6 @@ python xxx.py
 </p>
 
 ## Thanks to
-- [MADDPG implementation repo](https://github.com/agakshat/maddpg)
+- [agakshat's MADDPG implementation repo](https://github.com/agakshat/maddpg)
 - [OpenAI baselines](https://github.com/openai/baselines)
 - [OpenAI envs](https://github.com/openai/multiagent-particle-envs)

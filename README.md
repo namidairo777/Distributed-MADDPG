@@ -16,6 +16,12 @@ To optimize one-step update without losing diversity, we divide batch data into 
 Similar to A3C algorithm, we adopt this Master and Multi-Worker architecture in our work.
 
 ## Experiment
+### Implementation
+- Keras 2.1.2 （tensorflow 1.4 as backend）
+- mpi4py
+- Python 3.6
+- CUDA 8.0 + cuDNN 6.0
+
 ### Environment
 - Modified original environment (you can find in my repo) from [OpenAI](https://github.com/openai/multiagent-particle-envs)
 	- Fixed landmark
@@ -66,3 +72,8 @@ python xxx.py
 <p align="center">
   <img width="300" src="https://github.com/namidairo777/Distributed-MADDPG/blob/master/imgs/4vs2_slow_gif.gif">
 </p>
+
+## Thanks to
+- [MADDPG implementation repo](https://github.com/agakshat/maddpg)
+- [OpenAI baselines](https://github.com/openai/baselines)
+- [OpenAI envs](https://github.com/openai/multiagent-particle-envs)
